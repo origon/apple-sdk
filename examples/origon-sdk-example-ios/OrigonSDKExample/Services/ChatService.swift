@@ -365,6 +365,10 @@ final class ChatService: ObservableObject {
     ///     connect matches a gallery reply on the PAIR `(galleryLabel, value)`,
     ///     because two cards may carry the same option value.
     func sendMessage(text: String, value: String? = nil, galleryLabel: String? = nil) async {
+        guard sdk?.hasAuthoritativeConfig == true else {
+            error = "Endpoint configuration is still refreshing."
+            return
+        }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         // Read tiles through the accessor: with no session focused they are
         // still on the draft list, and an attachment-only first message is
@@ -487,7 +491,8 @@ final class ChatService: ObservableObject {
     /// Notify the peer that the user is typing on the focused session.
     /// Cheap to call from `onChange`; the SDK debounces wire traffic.
     func notifyTyping() {
-        guard let client = sdk?.client, let id = currentSessionId else { return }
+        guard sdk?.hasAuthoritativeConfig == true,
+              let client = sdk?.client, let id = currentSessionId else { return }
         try? client.notifyTyping(id: id)
     }
 
@@ -520,6 +525,10 @@ final class ChatService: ObservableObject {
     /// server-issued ``Attachment``; on failure to `.error` with a
     /// human-friendly message keyed off ``OrigonError`` codes.
     func uploadFile(data: Data, fileName: String, contentType: String, previewImage: UIImage?) {
+        guard sdk?.hasAuthoritativeConfig == true else {
+            error = "Endpoint configuration is still refreshing."
+            return
+        }
         guard attachmentAllowed(contentType: contentType) else {
             error = "This file type is disabled for this endpoint."
             return
@@ -835,6 +844,9 @@ final class ChatService: ObservableObject {
         payload: SendMessagePayload,
         resuming resumeId: String?
     ) async throws -> String {
+        guard sdk?.hasAuthoritativeConfig == true else {
+            throw OrigonError(kind: .other, message: "Endpoint configuration is still refreshing")
+        }
         guard let client = destinationClient else { throw OrigonError.notInitialized }
 
         if let inFlight = sessionStartTask {

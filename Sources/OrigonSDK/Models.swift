@@ -334,7 +334,7 @@ public struct ActiveSession: Sendable {
 
 // MARK: - Server config
 
-public struct AttachmentRule: Sendable {
+public struct AttachmentRule: Codable, Sendable, Equatable {
     public let enabled: Bool
     /// Maximum allowed size in megabytes.
     public let maxSize: UInt32
@@ -345,7 +345,7 @@ public struct AttachmentRule: Sendable {
     }
 }
 
-public struct AttachmentPolicy: Sendable {
+public struct AttachmentPolicy: Codable, Sendable, Equatable {
     public let images: AttachmentRule
     public let documents: AttachmentRule
     public let videos: AttachmentRule
@@ -374,12 +374,58 @@ public struct AttachmentPolicy: Sendable {
 }
 
 /// Tenant configuration returned by `GET /config` at connect time.
-public struct ServerConfig: Sendable {
+public struct ServerConfig: Codable, Sendable, Equatable {
     public let startMessage: String
     public let multipleChannels: Bool
     public let isChatEnabled: Bool
     public let isCallEnabled: Bool
     public let attachmentPolicy: AttachmentPolicy
+
+    public init(
+        startMessage: String,
+        multipleChannels: Bool,
+        isChatEnabled: Bool,
+        isCallEnabled: Bool,
+        attachmentPolicy: AttachmentPolicy
+    ) {
+        self.startMessage = startMessage
+        self.multipleChannels = multipleChannels
+        self.isChatEnabled = isChatEnabled
+        self.isCallEnabled = isCallEnabled
+        self.attachmentPolicy = attachmentPolicy
+    }
+
+    public static let disabled = ServerConfig(
+        startMessage: "",
+        multipleChannels: false,
+        isChatEnabled: false,
+        isCallEnabled: false,
+        attachmentPolicy: .disabled
+    )
+
+    private enum CodingKeys: String, CodingKey {
+        case startMessage
+        case multipleChannels
+        case isChatEnabled = "chatEnabled"
+        case isCallEnabled = "callEnabled"
+        case attachmentPolicy
+    }
+}
+
+/// One cache or network generation of the endpoint configuration.
+public struct ServerConfigLoadSnapshot: Codable, Sendable, Equatable {
+    public let source: SessionLoadSource
+    public let authoritative: Bool
+    public let refreshedAt: UInt64
+    public let config: ServerConfig
+}
+
+/// Retained cache-first `/config` observation. A transient refresh error may
+/// follow a cached snapshot; terminal scope failures are delivered here after
+/// the native snapshot getter has been revoked.
+public enum ServerConfigLoadUpdate: Sendable {
+    case snapshot(ServerConfigLoadSnapshot)
+    case refreshFailed(error: OrigonError, cachedSnapshotEmitted: Bool)
 }
 
 // MARK: - Session history

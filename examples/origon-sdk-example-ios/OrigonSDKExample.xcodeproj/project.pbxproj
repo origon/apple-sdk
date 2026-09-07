@@ -583,7 +583,7 @@
 			repositoryURL = "https://github.com/Origon/apple-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.3.3;
+				minimumVersion = 0.3.4;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

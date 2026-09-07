@@ -516,6 +516,30 @@ final class ChatSessionClientTests: XCTestCase {
         XCTAssertEqual(replacement.value, fresh)
     }
 
+    func testCachedEndpointConfigurationIsPresentationOnlyUntilAuthoritative() {
+        let cached = ExampleServerConfig(
+            startMessage: "Cached greeting",
+            multipleChannels: true,
+            chatEnabled: true,
+            callEnabled: true,
+            attachments: ExampleAttachmentPolicy(
+                AttachmentPolicy(
+                    images: .init(enabled: true, maxSize: 5),
+                    documents: .init(enabled: true, maxSize: 5),
+                    videos: .init(enabled: true, maxSize: 5),
+                    audio: .init(enabled: true, maxSize: 5)
+                )
+            )
+        )
+        let policy = ExampleEndpointPolicy(config: cached, authoritative: false)
+        XCTAssertEqual(policy.greeting, "Cached greeting")
+        XCTAssertFalse(policy.showsComposer)
+        XCTAssertFalse(policy.showsVoiceOnlyAction)
+        XCTAssertFalse(policy.showsComposerVoiceAction)
+        XCTAssertFalse(policy.promptSendEnabled)
+        XCTAssertFalse(policy.attachments.allows(.images))
+    }
+
     private func waitUntil(
         _ predicate: @escaping @MainActor () -> Bool,
         file: StaticString = #filePath,

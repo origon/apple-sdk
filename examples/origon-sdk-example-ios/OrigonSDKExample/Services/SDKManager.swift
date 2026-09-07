@@ -81,18 +81,18 @@ struct ExampleEndpointPolicy: Equatable {
     let promptSendEnabled: Bool
     let attachments: ExampleAttachmentPolicy
 
-    init(config: ExampleServerConfig?) {
+    init(config: ExampleServerConfig?, authoritative: Bool = true) {
         let config = config ?? ExampleServerConfig(
             startMessage: "", multipleChannels: false,
             chatEnabled: false, callEnabled: false
         )
         greeting = config.startMessage.trimmingCharacters(in: .whitespacesAndNewlines)
             .nonEmpty ?? "How can I help you?"
-        showsComposer = config.chatEnabled
-        showsVoiceOnlyAction = config.callEnabled && !config.chatEnabled
-        showsComposerVoiceAction = config.chatEnabled && config.callEnabled && config.multipleChannels
-        promptSendEnabled = config.chatEnabled
-        attachments = config.chatEnabled ? config.attachments : .init()
+        showsComposer = authoritative && config.chatEnabled
+        showsVoiceOnlyAction = authoritative && config.callEnabled && !config.chatEnabled
+        showsComposerVoiceAction = authoritative && config.chatEnabled && config.callEnabled && config.multipleChannels
+        promptSendEnabled = authoritative && config.chatEnabled
+        attachments = authoritative && config.chatEnabled ? config.attachments : .init()
     }
 }
 
@@ -137,15 +137,32 @@ private extension String {
 @MainActor
 final class SDKManager: ObservableObject {
 
+    enum ConfigAuthorityState {
+        case unavailable
+        case cached
+        case authoritative
+        case transientFailure(OrigonError)
+        case terminal(OrigonError)
+    }
+
     @Published private(set) var isReady = false
     @Published private(set) var sessions: [SessionSummary] = []
     @Published private(set) var isLoadingSessions = false
     @Published private(set) var serverConfig: ExampleServerConfig?
+    @Published private(set) var configAuthority: ConfigAuthorityState = .unavailable
     private var configReplacement = ExampleConfigReplacement()
+    private var configUpdatesTask: Task<Void, Never>?
     private let checkpointStore = try? ExampleChatCheckpointStore.live()
     private(set) var checkpointEndpoint: String?
 
-    var endpointPolicy: ExampleEndpointPolicy { ExampleEndpointPolicy(config: serverConfig) }
+    var hasAuthoritativeConfig: Bool {
+        if case .authoritative = configAuthority { return true }
+        return false
+    }
+
+    var endpointPolicy: ExampleEndpointPolicy {
+        ExampleEndpointPolicy(config: serverConfig, authoritative: hasAuthoritativeConfig)
+    }
 
     private(set) var client: OrigonClient?
 
@@ -196,6 +213,7 @@ final class SDKManager: ObservableObject {
         chat.clientWillChange()
         let configEpoch = configReplacement.begin()
         serverConfig = nil
+        configAuthority = .unavailable
         // `userId` is optional; when nil the SDK resolves a device
         // identifier internally to use as the fallback.
         let config = ClientConfig(
@@ -222,12 +240,15 @@ final class SDKManager: ObservableObject {
         chat.clientDidChange()
         self.isReady = true
         startPolling()
+        observeConfigUpdates(from: newClient, epoch: configEpoch)
     }
 
     /// Destroy the client, reset child services, and stop polling.
     /// Idempotent — safe to call on logout regardless of whether
     /// `initialize` ran.
     func teardown() {
+        configUpdatesTask?.cancel()
+        configUpdatesTask = nil
         stopPolling()
         chat.destroy()
         sessions = []
@@ -236,7 +257,67 @@ final class SDKManager: ObservableObject {
         checkpointEndpoint = nil
         _ = configReplacement.begin()
         serverConfig = nil
+        configAuthority = .unavailable
         isReady = false
+    }
+
+    func retryServerConfig() {
+        guard let client else { return }
+        startConfigTask(client: client, epoch: configReplacement.epoch, retry: true)
+    }
+
+    private func observeConfigUpdates(from client: OrigonClient, epoch: UInt64) {
+        configAuthority = .cached
+        startConfigTask(client: client, epoch: epoch, retry: false)
+    }
+
+    private func startConfigTask(client: OrigonClient, epoch: UInt64, retry: Bool) {
+        configUpdatesTask?.cancel()
+        configUpdatesTask = Task { [weak self, weak client] in
+            guard let client else { return }
+            do {
+                let updates = retry
+                    ? try client.retryServerConfig()
+                    : try client.serverConfigUpdates()
+                for try await update in updates {
+                    guard !Task.isCancelled, let self,
+                          self.configReplacement.epoch == epoch,
+                          self.client === client else { return }
+                    switch update {
+                    case .snapshot(let snapshot):
+                        let next = ExampleServerConfig(snapshot.config)
+                        guard self.configReplacement.install(next, for: epoch) else { return }
+                        self.serverConfig = next
+                        self.configAuthority = snapshot.authoritative ? .authoritative : .cached
+                    case .refreshFailed(let error, _):
+                        if [400, 401, 403, 404].contains(error.statusCode) {
+                            _ = self.configReplacement.begin()
+                            self.serverConfig = nil
+                            self.sessions = []
+                            self.chat.destroy()
+                            self.configAuthority = .terminal(error)
+                        } else {
+                            self.configAuthority = .transientFailure(error)
+                        }
+                    }
+                }
+            } catch let error as OrigonError {
+                guard let self, self.configReplacement.epoch == epoch,
+                      self.client === client else { return }
+                if [400, 401, 403, 404].contains(error.statusCode) {
+                    _ = self.configReplacement.begin()
+                    self.serverConfig = nil
+                    self.sessions = []
+                    self.chat.destroy()
+                    self.configAuthority = .terminal(error)
+                } else {
+                    self.configAuthority = .transientFailure(error)
+                }
+            } catch {
+                // Cancellation and wrapper decode failures cannot promote
+                // cached endpoint policy to authoritative state.
+            }
+        }
     }
 
     func checkpoint(sessionId: String) async -> ExampleChatCheckpoint? {

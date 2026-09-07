@@ -51,7 +51,10 @@ final class CallService: ObservableObject {
     /// synchronously, then `.connected` once the SDK fires `.connected`
     /// for our session id.
     func startCall() async throws {
-        guard let client = sdk?.client else { throw OrigonError.notInitialized }
+        guard let sdk, sdk.hasAuthoritativeConfig else {
+            throw OrigonError(kind: .other, message: "Endpoint configuration is still refreshing")
+        }
+        guard let client = sdk.client else { throw OrigonError.notInitialized }
 
         phase = .connecting
         lastError = nil

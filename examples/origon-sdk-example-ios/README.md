@@ -137,7 +137,7 @@ safe-logging integration guide.
 
 The `OrigonSDK` Swift package is consumed via SPM from
 [github.com/Origon/apple-sdk](https://github.com/Origon/apple-sdk). The version
-rule is **Up to Next Major Version** from `0.3.3`. To change it, select the project in Xcode →
+rule is **Up to Next Major Version** from `0.3.4`. To change it, select the project in Xcode →
 **Package Dependencies** → double-click the `apple-sdk` row and edit the rule.
 
 ## Scope notes

@@ -61,7 +61,7 @@ Add the package to your `Package.swift` or through Xcode's package manager:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Origon/apple-sdk", from: "0.3.3"),
+    .package(url: "https://github.com/Origon/apple-sdk", from: "0.3.4"),
 ]
 ```
 
@@ -175,6 +175,16 @@ let client = try OrigonClient(config: ClientConfig(
     endpoint: "https://origon.ai/chat/api/<id>",
     userId: "user-123"
 ))
+
+// Render a cached generation immediately when available, but enable actions
+// only after an authoritative network generation arrives.
+for try await update in try client.serverConfigUpdates() {
+    if case .snapshot(let snapshot) = update {
+        render(snapshot.config)
+        actionsEnabled = snapshot.authoritative
+        if snapshot.authoritative { break }
+    }
+}
 
 // 2. Start a voice session.
 let response = try client.startCall(StartCallOptions())

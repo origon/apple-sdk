@@ -33,14 +33,15 @@ while IFS= read -r header; do
     echo "$header is missing session_client_send_dtmf" >&2
     exit 1
   }
-  grep -q 'session_client_directory_page_loader_start' "$header" || {
-    echo "$header is missing session_client_directory_page_loader_start" >&2
-    exit 1
-  }
-  grep -q 'session_client_session_history_page_loader_start' "$header" || {
-    echo "$header is missing session_client_session_history_page_loader_start" >&2
-    exit 1
-  }
+  for required in session_client_directory_page_loader_start \
+    session_client_session_history_page_loader_start \
+    session_client_server_config session_client_config_loader_start \
+    session_client_config_retry; do
+    grep -q "$required" "$header" || {
+      echo "$header is missing $required" >&2
+      exit 1
+    }
+  done
 done < <(find "$artifact" -type f -name session_bridge.h -print)
 if (( header_count == 0 )); then
   echo "XCFramework has no session_bridge.h" >&2
@@ -59,14 +60,15 @@ while IFS= read -r library; do
     echo "$library is missing session_client_send_dtmf" >&2
     exit 1
   }
-  grep -Eq '^_?session_client_directory_page_loader_start$' <<<"$symbols" || {
-    echo "$library is missing session_client_directory_page_loader_start" >&2
-    exit 1
-  }
-  grep -Eq '^_?session_client_session_history_page_loader_start$' <<<"$symbols" || {
-    echo "$library is missing session_client_session_history_page_loader_start" >&2
-    exit 1
-  }
+  for required in session_client_directory_page_loader_start \
+    session_client_session_history_page_loader_start \
+    session_client_server_config session_client_config_loader_start \
+    session_client_config_retry; do
+    grep -Eq "^_?${required}$" <<<"$symbols" || {
+      echo "$library is missing $required" >&2
+      exit 1
+    }
+  done
   for retired in session_client_get_sessions session_client_get_session \
     session_client_open_chat_with_intent; do
     ! grep -Eq "^_?${retired}$" <<<"$symbols" || {
@@ -114,7 +116,11 @@ perl -0pi -e '
    {.binaryTarget(name: "COrigonSDK", path: "Frameworks/COrigonSDK.xcframework")}sx
 ' "$scratch/repo/Package.swift"
 
-swift test --package-path "$scratch/repo"
+swift_test_args=(--package-path "$scratch/repo")
+if [[ -n "${ORIGON_TEST_FILTER:-}" ]]; then
+  swift_test_args+=(--filter "$ORIGON_TEST_FILTER")
+fi
+swift test "${swift_test_args[@]}"
 
 project="$scratch/repo/examples/origon-sdk-example-ios/OrigonSDKExample.xcodeproj/project.pbxproj"
 perl -0pi -e '
