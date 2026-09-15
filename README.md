@@ -61,7 +61,7 @@ Add the package to your `Package.swift` or through Xcode's package manager:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Origon/apple-sdk", from: "0.3.4"),
+    .package(url: "https://github.com/Origon/apple-sdk", from: "0.3.5"),
 ]
 ```
 
