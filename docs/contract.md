@@ -164,6 +164,27 @@ registers the cross-repository contracts that must change and validate together.
   `0-9*#A-D` before calling the ABI. Neither local validation nor native errors
   echo the symbol, and a failed request is never retried by the wrapper.
 
+## Session directory and transcript pagination
+
+- The wrapper consumes only the additive native starts
+  `session_client_directory_page_loader_start` and
+  `session_client_session_history_page_loader_start`; the existing loader
+  next/cancel/free lifecycle and every legacy directory/history API remain.
+- `sessionDirectoryPageUpdates` and `sessionHistoryPageUpdates` are finite
+  one-page streams. Their strict envelopes require the complete nullable cursor
+  shape and closed `ai|user` control vocabulary. Native request failures retain
+  whether the attempted page was initial or a continuation.
+- `SessionDirectoryPager` and `SessionHistoryPager` are the wrapper-owned
+  generation-fenced reducers. Search state is separate from cached unfiltered
+  state; live rows are filtered by the exact subject/contact/latest visible
+  text/attachment-name corpus, directory rows dedupe by session ID, and messages
+  reconcile both server and local IDs. History continuations prepend and neither
+  pager infers exhaustion from a short/empty page before eight progressing empty
+  continuations.
+- Release validation must build the XCFramework from the exact workspace Rust
+  candidate and prove both symbols in every header and static-library slice.
+  The released binary pin must not be used as evidence for this source change.
+
 ## Session audio levels
 
 - The wrapper consumes the additive C audio-level subscription ABI registered in
