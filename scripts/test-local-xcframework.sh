@@ -33,8 +33,10 @@ while IFS= read -r header; do
     echo "$header is missing session_client_send_dtmf" >&2
     exit 1
   }
-  for required in session_client_server_config \
-    session_client_config_loader_start session_client_config_retry; do
+  for required in session_client_directory_page_loader_start \
+    session_client_session_history_page_loader_start \
+    session_client_server_config session_client_config_loader_start \
+    session_client_config_retry; do
     grep -q "$required" "$header" || {
       echo "$header is missing $required" >&2
       exit 1
@@ -58,8 +60,10 @@ while IFS= read -r library; do
     echo "$library is missing session_client_send_dtmf" >&2
     exit 1
   }
-  for required in session_client_server_config \
-    session_client_config_loader_start session_client_config_retry; do
+  for required in session_client_directory_page_loader_start \
+    session_client_session_history_page_loader_start \
+    session_client_server_config session_client_config_loader_start \
+    session_client_config_retry; do
     grep -Eq "^_?${required}$" <<<"$symbols" || {
       echo "$library is missing $required" >&2
       exit 1
@@ -87,6 +91,14 @@ if grep -Eq 'public (func|var) (receiveDtmf|onDtmf|dtmfReceived)' "$wrapper"; th
   echo "Swift wrapper exposes an unsupported DTMF receive API" >&2
   exit 1
 fi
+grep -q 'public func sessionDirectoryPageUpdates' "$wrapper" || {
+  echo "Swift wrapper is missing sessionDirectoryPageUpdates" >&2
+  exit 1
+}
+grep -q 'public func sessionHistoryPageUpdates' "$wrapper" || {
+  echo "Swift wrapper is missing sessionHistoryPageUpdates" >&2
+  exit 1
+}
 
 scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT

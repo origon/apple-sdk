@@ -861,6 +861,117 @@ public final class OrigonClient: @unchecked Sendable {
         }
     }
 
+    /// Finite strict directory page load. Native request failures are surfaced
+    /// as a typed update carrying initial/continuation phase, then the stream ends.
+    public func sessionDirectoryPageUpdates(
+        request: SessionDirectoryPageRequest = .init()
+    ) throws -> AsyncThrowingStream<SessionDirectoryPageLoadUpdate, Error> {
+        guard (1...100).contains(request.pageSize) else {
+            throw OrigonError(kind: .other, message: "directory page size must be between 1 and 100")
+        }
+        var err = SessionError()
+        var rawLoader: OpaquePointer?
+        let rc = try withHandle { handle in
+            withOptionalCString(request.cursor) { cursor in
+                withOptionalCString(request.search) { search in
+                    session_client_directory_page_loader_start(
+                        handle, request.pageSize, cursor, search, &rawLoader, &err
+                    )
+                }
+            }
+        }
+        guard rc == 0, let rawLoader else { throw OrigonError.consume(&err) }
+        let loader = NativeLoader(rawLoader)
+        let phase = request.phase
+        return AsyncThrowingStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let task = Task.detached {
+                defer { loader.free() }
+                do {
+                    while !Task.isCancelled {
+                        switch try loader.next() {
+                        case .update(let json):
+                            let page = try JSONDecoder().decode(
+                                SessionDirectoryPage.self,
+                                from: Data(json.utf8)
+                            )
+                            continuation.yield(.page(page))
+                        case .refreshFailed(let error, _):
+                            continuation.yield(.failed(error: error, phase: phase))
+                        case .end, .cancelled:
+                            continuation.finish()
+                            return
+                        }
+                    }
+                    loader.cancel()
+                    continuation.finish()
+                } catch {
+                    loader.cancel()
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { @Sendable _ in
+                loader.cancel()
+                task.cancel()
+            }
+        }
+    }
+
+    /// Finite strict transcript page load. Page history is chronological; a
+    /// continuation page is older and is prepended by `SessionHistoryPager`.
+    public func sessionHistoryPageUpdates(
+        id: String,
+        request: SessionHistoryPageRequest = .init()
+    ) throws -> AsyncThrowingStream<SessionHistoryPageLoadUpdate, Error> {
+        guard (1...250).contains(request.pageSize) else {
+            throw OrigonError(kind: .other, message: "history page size must be between 1 and 250")
+        }
+        var err = SessionError()
+        var rawLoader: OpaquePointer?
+        let rc = try withHandle { handle in
+            id.withCString { sessionId in
+                withOptionalCString(request.cursor) { cursor in
+                    session_client_session_history_page_loader_start(
+                        handle, sessionId, request.pageSize, cursor, &rawLoader, &err
+                    )
+                }
+            }
+        }
+        guard rc == 0, let rawLoader else { throw OrigonError.consume(&err) }
+        let loader = NativeLoader(rawLoader)
+        let phase = request.phase
+        return AsyncThrowingStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            let task = Task.detached {
+                defer { loader.free() }
+                do {
+                    while !Task.isCancelled {
+                        switch try loader.next() {
+                        case .update(let json):
+                            let page = try JSONDecoder().decode(
+                                SessionHistoryPage.self,
+                                from: Data(json.utf8)
+                            )
+                            continuation.yield(.page(page))
+                        case .refreshFailed(let error, _):
+                            continuation.yield(.failed(error: error, phase: phase))
+                        case .end, .cancelled:
+                            continuation.finish()
+                            return
+                        }
+                    }
+                    loader.cancel()
+                    continuation.finish()
+                } catch {
+                    loader.cancel()
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { @Sendable _ in
+                loader.cancel()
+                task.cancel()
+            }
+        }
+    }
+
     public func cachedSession(id: String) async throws -> SessionSnapshot? {
         for try await update in try sessionUpdates(id: id, policy: .cacheOnly) {
             switch update {

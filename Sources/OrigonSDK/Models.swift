@@ -809,6 +809,132 @@ public struct SessionDirectorySnapshot: Codable, Sendable {
     public let sessions: [SessionSummary]
 }
 
+public let sessionPageEmptyContinuationLimit = 8
+
+public enum SessionPageLoadPhase: Sendable {
+    case initial
+    case continuation
+}
+
+public struct SessionDirectoryPageRequest: Sendable {
+    public let pageSize: Int32
+    public let cursor: String?
+    public let search: String?
+
+    public init(pageSize: Int32 = 50, cursor: String? = nil, search: String? = nil) {
+        self.pageSize = pageSize
+        self.cursor = cursor
+        self.search = search
+    }
+
+    public var phase: SessionPageLoadPhase { cursor == nil ? .initial : .continuation }
+}
+
+public struct SessionHistoryPageRequest: Sendable {
+    public let pageSize: Int32
+    public let cursor: String?
+
+    public init(pageSize: Int32 = 100, cursor: String? = nil) {
+        self.pageSize = pageSize
+        self.cursor = cursor
+    }
+
+    public var phase: SessionPageLoadPhase { cursor == nil ? .initial : .continuation }
+}
+
+public struct SessionDirectoryPage: Codable, Sendable {
+    public let sessions: [SessionSummary]
+    public let nextCursor: String?
+
+    public init(sessions: [SessionSummary], nextCursor: String?) {
+        self.sessions = sessions
+        self.nextCursor = nextCursor
+    }
+
+    private enum CodingKeys: String, CodingKey { case sessions, nextCursor }
+
+    public init(from decoder: Decoder) throws {
+        try requireExactKeys(decoder, expected: ["sessions", "nextCursor"])
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sessions = try container.decode([SessionSummary].self, forKey: .sessions)
+        nextCursor = try container.decode(String?.self, forKey: .nextCursor)
+    }
+}
+
+public struct SessionHistoryPage: Codable, Sendable {
+    public let history: [Message]
+    public let control: SessionControl
+    public let nextCursor: String?
+
+    public init(history: [Message], control: SessionControl, nextCursor: String?) {
+        self.history = history
+        self.control = control
+        self.nextCursor = nextCursor
+    }
+
+    private enum CodingKeys: String, CodingKey { case history, control, nextCursor }
+
+    public init(from decoder: Decoder) throws {
+        try requireExactKeys(decoder, expected: ["history", "control", "nextCursor"])
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        history = try container.decode([Message].self, forKey: .history)
+        control = try container.decode(SessionControl.self, forKey: .control)
+        nextCursor = try container.decode(String?.self, forKey: .nextCursor)
+    }
+}
+
+public enum SessionDirectoryPageLoadUpdate: Sendable {
+    case page(SessionDirectoryPage)
+    case failed(error: OrigonError, phase: SessionPageLoadPhase)
+}
+
+public enum SessionHistoryPageLoadUpdate: Sendable {
+    case page(SessionHistoryPage)
+    case failed(error: OrigonError, phase: SessionPageLoadPhase)
+}
+
+public struct SessionDirectoryPageSnapshot: Sendable {
+    public let generation: UInt64
+    public let search: String?
+    public let sessions: [SessionSummary]
+    public let nextCursor: String?
+    public let emptyContinuations: Int
+
+    public var canLoadMore: Bool {
+        nextCursor != nil && emptyContinuations < sessionPageEmptyContinuationLimit
+    }
+}
+
+public struct SessionHistoryPageSnapshot: Sendable {
+    public let generation: UInt64
+    public let history: [Message]
+    public let control: SessionControl
+    public let nextCursor: String?
+    public let emptyContinuations: Int
+
+    public var canLoadMore: Bool {
+        nextCursor != nil && emptyContinuations < sessionPageEmptyContinuationLimit
+    }
+}
+
+private struct AnyCodingKey: CodingKey {
+    let stringValue: String
+    let intValue: Int? = nil
+
+    init?(stringValue: String) { self.stringValue = stringValue }
+    init?(intValue: Int) { return nil }
+}
+
+private func requireExactKeys(_ decoder: Decoder, expected: Set<String>) throws {
+    let container = try decoder.container(keyedBy: AnyCodingKey.self)
+    let actual = Set(container.allKeys.map(\.stringValue))
+    guard actual == expected else {
+        throw DecodingError.dataCorrupted(
+            .init(codingPath: decoder.codingPath, debugDescription: "Unexpected page envelope keys")
+        )
+    }
+}
+
 public enum SessionLoadUpdate: Sendable {
     case snapshot(SessionSnapshot)
     case refreshFailed(error: OrigonError, cachedSnapshotEmitted: Bool)

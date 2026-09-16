@@ -61,7 +61,7 @@ Add the package to your `Package.swift` or through Xcode's package manager:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Origon/apple-sdk", from: "0.3.3"),
+    .package(url: "https://github.com/Origon/apple-sdk", from: "0.3.5"),
 ]
 ```
 
@@ -480,6 +480,8 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `openChat(sessionId:intent:)` | Open a retained chat with named passive, navigation, or notification authority. |
 | `sessionUpdates(id:policy:)` | Finite `AsyncThrowingStream`: optional cache snapshot, one network snapshot or typed refresh failure, then completion. |
 | `sessionDirectoryUpdates(policy:)` | Cache-first finite directory stream with the same ordering. |
+| `sessionDirectoryPageUpdates(request:)` | Finite strict directory/search page stream. Defaults to 50 rows (100 maximum) and reports whether a failure was initial or continuation. |
+| `sessionHistoryPageUpdates(id:request:)` | Finite strict chronological transcript page stream. Defaults to 100 rows (250 maximum); continuation pages are older. |
 | `cachedSession(s)` / `refreshSession(s)` | Explicit cache-only and authoritative network snapshots. |
 | `removeCachedSession(id:)` / `clearChatCache()` / `pruneChatCache()` | Explicit cache maintenance. |
 | `close()` / `OrigonClient.clearAllChatCaches()` | Close joins native loaders and cache writers; after all clients close, atomically clear every cached scope. |
@@ -526,6 +528,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `Attachment` | uploaded-media descriptor: `id`, `name`, `contentType`, `url`, and an optional client-side `localUrl` preview (kept on the local `Message`, stripped from the wire). Returned by `uploadAttachment(...)`, carried on `Message.attachments`, and passed back into `SendMessagePayload.attachments`. |
 | `UploadProgress` | `bytesUploaded`, optional `totalBytes`, optional `percent` (both `nil` when the transport reports no content length). Passed to the `uploadAttachment` `onProgress` callback. |
 | `SessionLoadPolicy`, `SessionSnapshot`, `SessionDirectorySnapshot`, load updates | Typed cache/network source, authority, refresh time, snapshots, and refresh failures. |
+| `SessionDirectoryPager`, `SessionHistoryPager`, page requests/pages/snapshots/load updates | Wrapper-owned generation fencing, search isolation, live reconciliation, stable-ID dedupe, prepend accumulation, nullable cursors, and bounded empty continuation. |
 | `Contact`, `SessionSummary`, `SessionHistory` | typed directory/transcript shapes carried by snapshots. |
 | `SendMessagePayload` | `text`, `html`, `attachments`, and optional `metadata` (input shape for `sendMessage(id:payload:)`). |
 | `OrigonError` | structured error with `kind`, `statusCode`, `code`, `message`. |
