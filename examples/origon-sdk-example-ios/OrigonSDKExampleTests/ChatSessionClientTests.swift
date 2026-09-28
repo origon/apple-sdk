@@ -387,6 +387,11 @@ final class ChatSessionClientTests: XCTestCase {
     func testDroppedAttachmentFirstSendResumesSameId() async throws {
         let fake = FakeLateChatClient()
         let service = ChatService(chatClient: fake)
+        let manager = SDKManager()
+        manager.installConfigForTesting(.init(
+            startMessage: "", multipleChannels: false, chatEnabled: true, callEnabled: false
+        ))
+        service.bind(to: manager)
         let attachment = Attachment(
             id: "file", name: "photo.jpg", contentType: "image/jpeg",
             url: "https://example.invalid/file"
@@ -406,9 +411,11 @@ final class ChatSessionClientTests: XCTestCase {
 
         await service.sendMessage(text: "")
 
+        XCTAssertTrue(manager.hasAuthoritativeConfig)
         XCTAssertEqual(fake.starts.count, 1)
-        XCTAssertEqual(fake.starts[0].sessionId, "chat")
-        XCTAssertEqual(fake.starts[0].firstMessage.attachments.map(\.id), ["file"])
+        let start = try XCTUnwrap(fake.starts.first)
+        XCTAssertEqual(start.sessionId, "chat")
+        XCTAssertEqual(start.firstMessage.attachments.map(\.id), ["file"])
         XCTAssertEqual(service.messages.map(\.id), ["kept"])
         XCTAssertEqual(service.currentConnectionState, .connected)
         XCTAssertTrue(service.pendingAttachments.isEmpty)

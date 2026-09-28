@@ -8,6 +8,8 @@ final class PublicAPIContractTests: XCTestCase {
             OrigonClient.serverConfigUpdates
         let retry: (OrigonClient) -> () throws -> AsyncThrowingStream<ServerConfigLoadUpdate, Error> =
             OrigonClient.retryServerConfig
+        let end: (OrigonClient) -> (String) throws -> Void = OrigonClient.endChat
+        _ = end
         _ = initializer
         _ = observe
         _ = retry

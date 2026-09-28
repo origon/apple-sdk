@@ -746,6 +746,16 @@ public final class OrigonClient: @unchecked Sendable {
         if rc != 0 { throw OrigonError.consume(&err) }
     }
 
+    /// End the customer conversation while retaining its transcript. Blocking:
+    /// invoke off the main thread. `endSession` remains local cleanup.
+    public func endChat(_ id: String) throws {
+        var err = SessionError()
+        let rc = try withHandle { handle in
+            id.withCString { session_client_end_chat(handle, $0, &err) }
+        }
+        if rc != 0 { throw OrigonError.consume(&err) }
+    }
+
     public func endSession(_ id: String) throws {
         var err = SessionError()
         let rc = try withHandle { handle in

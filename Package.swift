@@ -34,5 +34,10 @@ let package = Package(
                 .linkedFramework("ScreenCaptureKit", .when(platforms: [.macOS])),
             ]
         ),
+        .testTarget(
+            name: "OrigonSDKTests",
+            dependencies: ["OrigonSDK"],
+            path: "Tests/OrigonSDKTests"
+        ),
     ]
 )

@@ -36,7 +36,7 @@ while IFS= read -r header; do
   for required in session_client_directory_page_loader_start \
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \
-    session_client_config_retry; do
+    session_client_config_retry session_client_end_chat; do
     grep -q "$required" "$header" || {
       echo "$header is missing $required" >&2
       exit 1
@@ -63,7 +63,7 @@ while IFS= read -r library; do
   for required in session_client_directory_page_loader_start \
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \
-    session_client_config_retry; do
+    session_client_config_retry session_client_end_chat; do
     grep -Eq "^_?${required}$" <<<"$symbols" || {
       echo "$library is missing $required" >&2
       exit 1
@@ -83,6 +83,10 @@ if (( library_count == 0 )); then
 fi
 
 wrapper="$repo_dir/Sources/OrigonSDK/OrigonClient.swift"
+grep -q 'public func endChat(_ id: String) throws' "$wrapper" || {
+  echo "Swift wrapper is missing endChat(_:)" >&2
+  exit 1
+}
 grep -q 'public func sendDtmf(id: String, digit: Character)' "$wrapper" || {
   echo "Swift wrapper is missing sendDtmf(id:digit:)" >&2
   exit 1
@@ -100,7 +104,7 @@ grep -q 'public func sessionHistoryPageUpdates' "$wrapper" || {
   exit 1
 }
 
-scratch="$(mktemp -d)"
+scratch="$(mktemp -d "${TMPDIR:-/tmp}/origon-sdk-tests.XXXXXX")"
 trap 'rm -rf "$scratch"' EXIT
 mkdir -p "$scratch/repo"
 rsync -a --exclude .git --exclude .build --exclude DerivedData \

@@ -486,7 +486,8 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `removeCachedSession(id:)` / `clearChatCache()` / `pruneChatCache()` | Explicit cache maintenance. |
 | `close()` / `OrigonClient.clearAllChatCaches()` | Close joins native loaders and cache writers; after all clients close, atomically clear every cached scope. |
 | `joinCall(_:)` / `joinChat(_:)` | Attach to a previously-obtained `StartSessionResponse`. |
-| `endSession(_:)` / `endAllSessions()` | Close a single / every session. |
+| `endChat(_:)` | End an owned customer chat, preserving its transcript. Blocking call: execute off the UI thread. Duplicate pending requests coalesce; failures are reported for retry. |
+| `endSession(_:)` / `endAllSessions()` | Close a single / every local session; customer chat cleanup detaches rather than ending the conversation. |
 | `sendDtmf(id:digit:)` | Voice — send one uppercase ASCII `0-9`, `*`, `#`, or `A-D` control symbol to the CX flow. Produces no local tone or haptic. |
 | `observeAudioLevels(sessionId:_:)` | Voice — cancellable MainActor callback carrying aggregate outbound/inbound RMS and endpoint-attributed inbound levels. Retain the returned `AudioLevelObservation`. |
 | `setMute(id:muted:)` / `setMuteAll(muted:)` | Voice — absolute mute. |

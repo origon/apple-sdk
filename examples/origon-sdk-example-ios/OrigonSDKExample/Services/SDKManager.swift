@@ -155,6 +155,14 @@ final class SDKManager: ObservableObject {
     private let checkpointStore = try? ExampleChatCheckpointStore.live()
     private(set) var checkpointEndpoint: String?
 
+    #if DEBUG
+    /// Unit fixtures bind the same config authority used by the production guard.
+    func installConfigForTesting(_ config: ExampleServerConfig) {
+        serverConfig = config
+        configAuthority = .authoritative
+    }
+    #endif
+
     var hasAuthoritativeConfig: Bool {
         if case .authoritative = configAuthority { return true }
         return false

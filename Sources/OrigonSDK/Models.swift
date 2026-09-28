@@ -1104,6 +1104,10 @@ public struct OrigonError: Error, Sendable, CustomStringConvertible, LocalizedEr
         /// using the same `uploadId` passed to `uploadAttachment`. Only
         /// surfaced from `uploadAttachment`. See its doc for the pattern.
         case cancelled = 9
+        /// Server ORPC refusal; code carries its numeric value.
+        case chatRefused = 10
+        /// Local End state; code is "pending" or "unconfirmed".
+        case chatEnd = 11
     }
 
     public init(kind: Kind, statusCode: Int = 0, code: String? = nil, message: String? = nil) {

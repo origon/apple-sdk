@@ -216,7 +216,7 @@ private extension OrigonError {
         case .other:
             if let message, !message.isEmpty { return message }
             return "Can't reach the server. Check the URL and your connection."
-        case .notInitialized, .noSession, .session, .attachment, .cancelled, .unknown:
+        case .notInitialized, .noSession, .session, .attachment, .cancelled, .chatRefused, .chatEnd, .unknown:
             return message ?? "Failed to connect. Please try again."
         }
     }
