@@ -85,13 +85,29 @@ final class ChatSessionClientTests: XCTestCase {
             latestRowVisible: true, now: Date(timeIntervalSince1970: 10)
         )
         async let second: Void = store.markSeen(
-            endpoint: endpoint, sessionId: "session", messageId: "two",
+            endpoint: endpoint, sessionId: "concurrent", messageId: "other",
             authoritative: true, sceneForeground: true, detailVisible: true,
-            latestRowVisible: true, now: Date(timeIntervalSince1970: 20)
+            latestRowVisible: true, now: Date(timeIntervalSince1970: 10)
         )
         _ = try await (first, second)
-        let stored = try await store.read(
+        // Concurrent tasks have no declaration-order guarantee. Distinct rows
+        // prove serialized read/modify/write does not lose either update.
+        let firstStored = try await store.read(
             endpoint: endpoint, sessionId: "session", now: Date(timeIntervalSince1970: 30)
+        )
+        let concurrentStored = try await store.read(
+            endpoint: endpoint, sessionId: "concurrent", now: Date(timeIntervalSince1970: 30)
+        )
+        XCTAssertEqual(firstStored?.lastSeenMessageId, "one")
+        XCTAssertEqual(concurrentStored?.lastSeenMessageId, "other")
+        // Establish an actual happens-before boundary for replacing this row.
+        try await store.markSeen(
+            endpoint: endpoint, sessionId: "session", messageId: "two",
+            authoritative: true, sceneForeground: true, detailVisible: true,
+            latestRowVisible: true, now: Date(timeIntervalSince1970: 40)
+        )
+        let stored = try await store.read(
+            endpoint: endpoint, sessionId: "session", now: Date(timeIntervalSince1970: 50)
         )
         XCTAssertEqual(stored?.lastSeenMessageId, "two")
         let otherScope = try await store.read(
