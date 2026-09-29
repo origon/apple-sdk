@@ -549,8 +549,8 @@ final class ChatService: ObservableObject {
     }
 
     func removePendingAttachment(id: String) {
-        // Snapshot the row before we mutate so we can fire the right
-        // server-side cleanup. We search both the draft list and every
+        // Snapshot the row before removal to cancel an active upload.
+        // Completed attachments remain on the server. Search the draft and every
         // session's pending list — the row may have started life in
         // the draft and migrated into a session.
         var removed: PendingAttachment?
@@ -569,30 +569,8 @@ final class ChatService: ObservableObject {
         }
         guard let removed, let client = sdk?.client else { return }
 
-        switch removed.status {
-        case .uploading:
-            // The SDK's deleteAttachment is dual-purpose: it matches
-            // our local id against its in-flight upload table and
-            // tears down the QUIC stream with a RESET. The upload's
-            // awaiter throws `.cancelled`, which `runUpload` swallows.
-            // Fires regardless of which list hosted the row — the write
-            // lane is widget-scoped, and a draft-list upload is now the
-            // common case since uploads no longer wait on a session.
-            Task.detached {
-                try? await client.deleteAttachment(attachmentId: id)
-            }
-
-        case .completed:
-            // Server already has the blob; clean it up with its
-            // server-issued id.
-            guard let serverId = removed.attachment?.id else { return }
-            Task.detached {
-                try? await client.deleteAttachment(attachmentId: serverId)
-            }
-
-        case .error:
-            // Nothing committed to the server — local remove is enough.
-            return
+        if removed.status == .uploading {
+            try? client.cancelUpload(uploadId: id)
         }
     }
 
@@ -918,9 +896,7 @@ final class ChatService: ObservableObject {
         // `uploadFile` appends the row and then ENQUEUES this task, so an ×
         // tap can run in between. If the row is gone by the time we get
         // here, abort before any wire work starts — the cancel it fired
-        // landed before the SDK registered its in-flight entry, so it would
-        // have degraded to a DELETE of an id the server never saw, leaving
-        // an orphan blob behind this upload.
+        // landed before the SDK registered its in-flight entry and was a no-op.
         guard pendingExists(localId: localId) else { return }
 
         do {

@@ -1100,7 +1100,7 @@ public struct OrigonError: Error, Sendable, CustomStringConvertible, LocalizedEr
         case http = 6
         case attachment = 7
         case other = 8
-        /// Upload was cancelled via `deleteAttachment(attachmentId:)`
+        /// Upload was cancelled via `cancelUpload(uploadId:)`
         /// using the same `uploadId` passed to `uploadAttachment`. Only
         /// surfaced from `uploadAttachment`. See its doc for the pattern.
         case cancelled = 9

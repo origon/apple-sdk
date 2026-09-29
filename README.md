@@ -349,9 +349,6 @@ try client.sendMessage(
     payload: SendMessagePayload(attachments: [attachment])
 )
 
-// Cancel an in-flight upload (pass the uploadId) or delete a completed
-// one (pass attachment.id) — the SDK works out which.
-try await client.deleteAttachment(attachmentId: attachment.id)
 ```
 
 Uploads are prechecked against the tenant's `attachmentPolicy` (type and
@@ -496,7 +493,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `notifyTyping(id:)` | Chat — register a keystroke; SDK debounces outbound `/typing` POSTs. |
 | `stopTyping(id:)` | Chat — force outbound typing state to "off" immediately. |
 | `uploadAttachment(path:\|data:\|url:)` | `async`; upload a file (`path:` / `data:` / `url:` overloads) against the client's widget and return the server-issued `Attachment`. No session required. Reports progress via `onProgress`. |
-| `deleteAttachment(attachmentId:)` | `async`; cancel an in-flight upload (pass the `uploadId`) or delete a completed attachment (pass `attachment.id`). No session required. |
+| `cancelUpload(uploadId:)` | Locally cancel an in-flight upload by its caller-minted ID; returns whether one matched. Completed attachments are never deleted. |
 | `activeSessions()` | Snapshot of every active session. |
 | `setAttributes(_:)` | Replace session-level attributes injected on the next start. |
 | `OrigonClient.registerForPushNotifications(deviceToken:environment:)` | Static. Register an APNs device token (buffered until init; auto-detects environment). |

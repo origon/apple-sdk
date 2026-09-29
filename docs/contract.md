@@ -215,3 +215,21 @@ tests/typechecking and the example must pass against that artifact, and the
 workspace/app consumers must be validated in canonical dependency order. Never
 update `Package.swift` to a public binary or publish a release as part of an
 implementation spin.
+
+## Attachment upload cancellation
+
+- `OrigonClient.cancelUpload(uploadId:)` binds the local-only
+  `session_client_cancel_upload` operation in
+  `/home/yl/workspace/apps/sdk/session/include/session_bridge.h`. Native return
+  values 1/0 map to true/false; negative values throw the supplied SDK error.
+- The obsolete `deleteAttachment` wrapper is removed with the native attachment
+  DELETE hardcut. Completed attachments cannot be deleted by SDK consumers.
+- Upload callers retain the caller-minted upload ID for cancellation; server
+  attachment IDs are not cancellation handles. The example removes completed
+  tiles locally and calls cancellation only for an in-flight upload.
+- 2026-09-29 compatibility correction: fixes the reported Swift compile failure
+  against workspace candidate `70f7c88a9`. Header/export preflight now requires
+  cancellation and rejects the retired delete symbol. Full Xcode build remains
+  pending Mac access. Swift parser checks, shell syntax, and diff checks passed;
+  all 51 native function calls in wrapper sources resolve to current header
+  declarations. These Linux checks do not qualify an iOS build.

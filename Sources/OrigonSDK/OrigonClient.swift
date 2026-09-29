@@ -1354,7 +1354,7 @@ public final class OrigonClient: @unchecked Sendable {
     /// For security-scoped `URL`s from `UIDocumentPicker` use the
     /// `url:` overload; for in-memory `Data` use the `data:` overload.
     /// Pass `uploadId` (default: fresh UUID) and hand the same value to
-    /// ``deleteAttachment(attachmentId:)`` to cancel in-flight.
+    /// ``cancelUpload(uploadId:)`` to cancel in-flight.
     /// `onProgress` is invoked on `@MainActor`.
     ///
     /// See `client-sdk/session/docs/contract.md#attachment-flow` for
@@ -1463,20 +1463,17 @@ public final class OrigonClient: @unchecked Sendable {
         )
     }
 
-    /// Dual-purpose: cancel an in-flight upload (when `attachmentId`
-    /// matches an active `uploadId`) or `DELETE` a completed attachment
-    /// by server id. Session-less like ``uploadAttachment(uploadId:path:fileName:onProgress:)``.
-    /// See `client-sdk/session/docs/contract.md#cancellation`.
-    public func deleteAttachment(attachmentId: String) async throws {
-        try await Task.detached {
-            try self.withHandle { handle in
-                var err = SessionError()
-                let rc = attachmentId.withCString { aidPtr in
-                    session_client_delete_attachment(handle, aidPtr, &err)
-                }
-                if rc != 0 { throw OrigonError.consume(&err) }
-            }
-        }.value
+    /// Cancel an in-flight upload using the caller-minted `uploadId`.
+    /// Returns true if an active upload was cancelled, false if none matched.
+    /// This is local only; completed attachments are never deleted.
+    @discardableResult
+    public func cancelUpload(uploadId: String) throws -> Bool {
+        var err = SessionError()
+        let rc = try withHandle { handle in
+            uploadId.withCString { session_client_cancel_upload(handle, $0, &err) }
+        }
+        if rc < 0 { throw OrigonError.consume(&err) }
+        return rc != 0
     }
 
     /// Blocking FFI call, intended for use from a detached task.

@@ -19,7 +19,7 @@ header_count=0
 while IFS= read -r header; do
   ((header_count += 1))
   for retired in session_client_get_sessions session_client_get_session \
-    session_client_open_chat_with_intent; do
+    session_client_open_chat_with_intent session_client_delete_attachment; do
     if grep -q "$retired" "$header"; then
       echo "$header still declares retired $retired" >&2
       exit 1
@@ -36,7 +36,7 @@ while IFS= read -r header; do
   for required in session_client_directory_page_loader_start \
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \
-    session_client_config_retry session_client_end_chat; do
+    session_client_config_retry session_client_end_chat session_client_cancel_upload; do
     grep -q "$required" "$header" || {
       echo "$header is missing $required" >&2
       exit 1
@@ -63,14 +63,14 @@ while IFS= read -r library; do
   for required in session_client_directory_page_loader_start \
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \
-    session_client_config_retry session_client_end_chat; do
+    session_client_config_retry session_client_end_chat session_client_cancel_upload; do
     grep -Eq "^_?${required}$" <<<"$symbols" || {
       echo "$library is missing $required" >&2
       exit 1
     }
   done
   for retired in session_client_get_sessions session_client_get_session \
-    session_client_open_chat_with_intent; do
+    session_client_open_chat_with_intent session_client_delete_attachment; do
     ! grep -Eq "^_?${retired}$" <<<"$symbols" || {
       echo "$library still exports retired $retired" >&2
       exit 1

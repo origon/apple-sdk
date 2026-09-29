@@ -315,10 +315,8 @@ func exampleViewportRestoreTarget(
 /// `id` is a local UUID assigned at pick time. It serves two purposes:
 /// (1) the SwiftUI `Identifiable` key for `ForEach`; and (2) the
 /// `uploadId` we pass to `client.uploadAttachment(...)` so that
-/// `client.deleteAttachment(attachmentId: id)` can cancel the upload
-/// in-flight (the SDK's dual-purpose deleteAttachment matches the
-/// id against its in-flight upload table first, then falls through
-/// to a server-side DELETE).
+/// `client.cancelUpload(uploadId: id)` can cancel the upload in flight.
+/// Removing a completed tile only discards the local reference.
 struct PendingAttachment: Identifiable, Equatable {
     let id: String
     let fileName: String
