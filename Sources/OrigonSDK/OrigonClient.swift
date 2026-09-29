@@ -653,9 +653,10 @@ public final class OrigonClient: @unchecked Sendable {
     ///
     /// A first message that fails to DELIVER does not throw: the session is
     /// live and the failure arrives as `.messageUpdated` with
-    /// `status == .failed`, so the user can retry. Only a TERMINAL refusal
-    /// (the session is already gone) throws — returning normally would leave
-    /// the app rendering a composer on a dead conversation.
+    /// `status == .failed`, so the user can retry. Failure before command
+    /// admission or after the actor terminates throws and retires only this
+    /// start's actor. A terminal refusal also throws; a failed first send never
+    /// silently opens a second incarnation.
     public func startChat(_ options: StartChatOptions) throws -> StartSessionResponse {
         let firstJson = try Self.encodePayload(options.firstMessage)
         var err = SessionError()
