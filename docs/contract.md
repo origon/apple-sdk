@@ -62,6 +62,12 @@ registers the cross-repository contracts that must change and validate together.
   only its native observation; `close()` cancels observations and native
   destroy joins the manager refresh. The wrapper retains its convenience
   properties, all backed by that same whole snapshot.
+- `ServerConfig.isChatEndEnabled` (JSON `chatEndEnabled`; convenience `isChatEndEnabled`) says whether
+  the backend offers End chat. It mirrors the shared core's `/config` `chat.end`: only an explicit `false`,
+  which an Agents-routed client gets, withholds it. A core snapshot without the field decodes as `true`
+  (hand-written `init(from:)`), the public `init` defaults it to `true`, and `.disabled` is `false`. Hosts
+  hide End when it is `false`; `endChat(_:)` itself is unchanged (workspace `apps/sdk/CONTRACT.md`
+  "`/config` `chat.end`").
 - The five legacy scalar C config getters are removed. The wrapper convenience
   properties remain source-compatible but derive exclusively from the atomic
   `serverConfig` snapshot, so one composite read cannot span generations.

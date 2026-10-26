@@ -26,6 +26,22 @@ final class PublicAPIContractTests: XCTestCase {
         XCTAssertEqual(snapshot.refreshedAt, 7)
         XCTAssertEqual(snapshot.config.startMessage, "Hello")
         XCTAssertTrue(snapshot.config.isChatEnabled)
+        // A core without `chatEndEnabled` (this fixture) offers End.
+        XCTAssertTrue(snapshot.config.isChatEndEnabled)
         XCTAssertTrue(snapshot.config.attachmentPolicy.images.enabled)
+    }
+
+    func testConfigSnapshotCarriesWhetherEndIsOffered() throws {
+        let policy = #""attachmentPolicy":{"images":{"enabled":false,"maxSize":0},"documents":{"enabled":false,"maxSize":0},"videos":{"enabled":false,"maxSize":0},"audio":{"enabled":false,"maxSize":0}}"#
+        let decode = { (end: String) throws -> ServerConfig in
+            let json = #"{"startMessage":"","multipleChannels":false,"chatEnabled":true,"# + end + #""callEnabled":false,"# + policy + "}"
+            return try JSONDecoder().decode(ServerConfig.self, from: Data(json.utf8))
+        }
+        XCTAssertFalse(try decode(#""chatEndEnabled":false,"#).isChatEndEnabled)
+        XCTAssertTrue(try decode(#""chatEndEnabled":true,"#).isChatEndEnabled)
+        XCTAssertTrue(try decode("").isChatEndEnabled)
+        XCTAssertFalse(ServerConfig.disabled.isChatEndEnabled)
+        let encoded = try JSONEncoder().encode(try decode(#""chatEndEnabled":false,"#))
+        XCTAssertFalse(try JSONDecoder().decode(ServerConfig.self, from: encoded).isChatEndEnabled)
     }
 }
