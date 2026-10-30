@@ -1809,6 +1809,7 @@ extension DisconnectReason {
         case SESSION_DISCONNECT_REASON_RESOURCE_EXHAUSTED: return .resourceExhausted
         case SESSION_DISCONNECT_REASON_REPLAY_LOST: return .replayLost
         case SESSION_DISCONNECT_REASON_SESSION_ENDED: return .sessionEnded
+        case SESSION_DISCONNECT_REASON_UPDATE_REQUIRED: return .updateRequired
         case SESSION_DISCONNECT_REASON_SERVER_CLOSED:
             let detail = r.server_detail.map { String(cString: $0) }
             return .serverClosed(code: r.server_code, detail: detail)

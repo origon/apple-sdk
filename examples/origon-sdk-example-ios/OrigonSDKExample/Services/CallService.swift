@@ -196,6 +196,8 @@ final class CallService: ObservableObject {
             return "Server is at capacity"
         case .replayLost:
             return "Connection lost"
+        case .updateRequired:
+            return "Please update the app to keep calling"
         case .serverClosed(_, let detail):
             return detail ?? "Disconnected"
         case .transportClosed(let detail):

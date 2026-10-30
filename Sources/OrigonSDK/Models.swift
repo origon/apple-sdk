@@ -959,11 +959,16 @@ public enum DisconnectReason: Sendable, Equatable {
     case capabilityMissing
     case illegalState
     case resourceExhausted
+    /// Retired with the v1 media wire: never produced (kind 12 is not reused).
     case replayLost
-    /// `0x1040` — server closed the session cleanly because the bridge
-    /// collapsed (remote SIP leg hung up, or the engine drained the
-    /// call). Terminal: no reconnect attempts follow.
+    /// The server ended the session (ms-signal `Error` 10 or close code 19):
+    /// the bridge collapsed, the controller destroyed the session, or the
+    /// engine reaped or drained it. Terminal: no reconnect attempts follow.
     case sessionEnded
+    /// The server speaks another media protocol version (ms-signal
+    /// `UpdateRequired`, or a dial refused at ALPN `orgn-media/2`). Terminal;
+    /// the app must update.
+    case updateRequired
     case serverClosed(code: UInt64, detail: String?)
     /// Local transport failed before the MOQ session was established
     /// (QUIC dial / DNS / TLS / etc.). `detail` carries the underlying
