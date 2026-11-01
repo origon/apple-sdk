@@ -1186,6 +1186,21 @@ public final class OrigonClient: @unchecked Sendable {
         if rc != 0 { throw OrigonError.consume(&err) }
     }
 
+    /// Call statistics for a voice session, or `nil` while there are none.
+    /// Read-only; cheap enough to poll every second.
+    public func callStats(id: String) throws -> CallStats? {
+        var stats = SessionCallStats()
+        var err = SessionError()
+        let rc = try withHandle { handle in
+            id.withCString { session_client_call_stats(handle, $0, &stats, &err) }
+        }
+        switch rc {
+        case 0: return CallStats(stats)
+        case 1: return nil
+        default: throw OrigonError.consume(&err)
+        }
+    }
+
     /// Observe the latest combined outbound, aggregate inbound, and
     /// endpoint-attributed inbound levels for one logical voice session.
     ///
@@ -1838,5 +1853,49 @@ extension OrigonError {
         let message = err.message.map { String(cString: $0) }
         session_error_clear(&err)
         return OrigonError(kind: kind, statusCode: status, code: code, message: message)
+    }
+}
+
+extension CallStats {
+    init(_ stats: SessionCallStats) {
+        self.init(
+            uplink: Uplink(
+                sent: stats.uplink_sent,
+                sentBytes: stats.uplink_sent_bytes,
+                bitrateBps: stats.uplink_bitrate_bps,
+                targetBps: stats.uplink_target_bps,
+                skippedStalled: stats.uplink_skipped_stalled,
+                skippedBacklog: stats.uplink_skipped_backlog,
+                skippedUnserviceable: stats.uplink_skipped_unserviceable,
+                skippedDown: stats.uplink_skipped_down,
+                skippedStale: stats.uplink_skipped_stale,
+                probes: stats.uplink_probes,
+                redundancyOn: stats.uplink_red != 0,
+                fecLossPercent: stats.uplink_fec_loss_percent
+            ),
+            downlink: Downlink(
+                tracks: stats.downlink_tracks,
+                received: stats.downlink_received,
+                lostFinal: stats.downlink_lost_final,
+                recoveredFec: stats.downlink_recovered_fec,
+                recoveredRed: stats.downlink_recovered_red,
+                concealed: stats.downlink_concealed,
+                late: stats.downlink_late,
+                overflow: stats.downlink_overflow,
+                decoded: stats.downlink_decoded,
+                jitterMs: stats.downlink_jitter_ms,
+                depthMs: stats.downlink_depth_ms,
+                targetDepthMs: stats.downlink_target_depth_ms,
+                audioAgeMs: stats.downlink_audio_age_ms
+            ),
+            transport: Transport(
+                rttUs: stats.transport_rtt_us,
+                minRttUs: stats.transport_min_rtt_us,
+                pathStalls: stats.transport_path_stalls,
+                pathSuspects: stats.transport_path_suspects,
+                switches: stats.transport_switches,
+                reconnects: stats.transport_reconnects
+            )
+        )
     }
 }

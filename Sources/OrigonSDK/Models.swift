@@ -964,6 +964,56 @@ public enum SessionDirectoryLoadUpdate: Sendable {
     case refreshFailed(error: OrigonError, cachedSnapshotEmitted: Bool)
 }
 
+// MARK: - Call statistics
+
+/// A snapshot of one voice session, cheap enough to poll every second.
+/// Counters are lifetime totals since the call started.
+public struct CallStats: Sendable, Equatable {
+    public struct Uplink: Sendable, Equatable {
+        public let sent: UInt64
+        public let sentBytes: UInt64
+        public let bitrateBps: UInt64
+        public let targetBps: UInt64
+        public let skippedStalled: UInt64
+        public let skippedBacklog: UInt64
+        public let skippedUnserviceable: UInt64
+        public let skippedDown: UInt64
+        public let skippedStale: UInt64
+        public let probes: UInt64
+        public let redundancyOn: Bool
+        public let fecLossPercent: UInt32
+    }
+
+    public struct Downlink: Sendable, Equatable {
+        public let tracks: UInt32
+        public let received: UInt64
+        public let lostFinal: UInt64
+        public let recoveredFec: UInt64
+        public let recoveredRed: UInt64
+        public let concealed: UInt64
+        public let late: UInt64
+        public let overflow: UInt64
+        public let decoded: UInt64
+        public let jitterMs: UInt32
+        public let depthMs: UInt32
+        public let targetDepthMs: UInt32
+        public let audioAgeMs: UInt32
+    }
+
+    public struct Transport: Sendable, Equatable {
+        public let rttUs: UInt64
+        public let minRttUs: UInt64
+        public let pathStalls: UInt64
+        public let pathSuspects: UInt64
+        public let switches: UInt64
+        public let reconnects: UInt64
+    }
+
+    public let uplink: Uplink
+    public let downlink: Downlink
+    public let transport: Transport
+}
+
 // MARK: - Disconnect reason
 
 public enum DisconnectReason: Sendable, Equatable {
