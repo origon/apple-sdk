@@ -498,6 +498,11 @@ public final class OrigonClient: @unchecked Sendable {
         serverConfig.isChatEnabled
     }
 
+    /// Whether the backend offers End chat; hide the End control when `false`.
+    public var isChatEndEnabled: Bool {
+        serverConfig.isChatEndEnabled
+    }
+
     public var isCallEnabled: Bool {
         serverConfig.isCallEnabled
     }

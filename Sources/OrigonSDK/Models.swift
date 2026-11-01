@@ -378,6 +378,9 @@ public struct ServerConfig: Codable, Sendable, Equatable {
     public let startMessage: String
     public let multipleChannels: Bool
     public let isChatEnabled: Bool
+    /// Whether the backend offers End chat (`/config` `chat.end`; only an explicit `false`, as
+    /// an Agents-routed client's, withholds it). Hide the End control when this is `false`.
+    public let isChatEndEnabled: Bool
     public let isCallEnabled: Bool
     public let attachmentPolicy: AttachmentPolicy
 
@@ -385,20 +388,35 @@ public struct ServerConfig: Codable, Sendable, Equatable {
         startMessage: String,
         multipleChannels: Bool,
         isChatEnabled: Bool,
+        isChatEndEnabled: Bool = true,
         isCallEnabled: Bool,
         attachmentPolicy: AttachmentPolicy
     ) {
         self.startMessage = startMessage
         self.multipleChannels = multipleChannels
         self.isChatEnabled = isChatEnabled
+        self.isChatEndEnabled = isChatEndEnabled
         self.isCallEnabled = isCallEnabled
         self.attachmentPolicy = attachmentPolicy
+    }
+
+    /// A snapshot from an SDK core without `chatEndEnabled` decodes as End offered.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        startMessage = try container.decode(String.self, forKey: .startMessage)
+        multipleChannels = try container.decode(Bool.self, forKey: .multipleChannels)
+        isChatEnabled = try container.decode(Bool.self, forKey: .isChatEnabled)
+        isChatEndEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .isChatEndEnabled) ?? true
+        isCallEnabled = try container.decode(Bool.self, forKey: .isCallEnabled)
+        attachmentPolicy = try container.decode(AttachmentPolicy.self, forKey: .attachmentPolicy)
     }
 
     public static let disabled = ServerConfig(
         startMessage: "",
         multipleChannels: false,
         isChatEnabled: false,
+        isChatEndEnabled: false,
         isCallEnabled: false,
         attachmentPolicy: .disabled
     )
@@ -407,6 +425,7 @@ public struct ServerConfig: Codable, Sendable, Equatable {
         case startMessage
         case multipleChannels
         case isChatEnabled = "chatEnabled"
+        case isChatEndEnabled = "chatEndEnabled"
         case isCallEnabled = "callEnabled"
         case attachmentPolicy
     }
