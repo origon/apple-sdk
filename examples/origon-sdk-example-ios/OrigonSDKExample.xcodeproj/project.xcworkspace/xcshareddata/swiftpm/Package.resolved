@@ -5,7 +5,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Origon/apple-sdk",
       "state" : {
-        "revision" : "3d5d476e03340ebb621b6ff4878987456ca5aaa4",
+        "revision" : "3148ebce74411fbec534760522ae393f0d8edc1d",
         "version" : "0.4.0"
       }
     },
