@@ -22,6 +22,7 @@ let package = Package(
             path: "Sources/OrigonSDK",
             linkerSettings: [
                 .linkedFramework("Foundation"),
+                .linkedFramework("Network"),
                 .linkedFramework("AVFAudio", .when(platforms: [.iOS])),
                 .linkedFramework("AudioToolbox", .when(platforms: [.iOS])),
                 .linkedFramework("CoreFoundation", .when(platforms: [.macOS])),
