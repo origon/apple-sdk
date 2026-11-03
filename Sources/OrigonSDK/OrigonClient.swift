@@ -1625,6 +1625,21 @@ public final class OrigonClient: @unchecked Sendable {
         return (payload.reason, payload.acw)
     }
 
+    /// Decode the `{active, reason}` noise-suppression JSON the bridge carries.
+    private static func decodeNoiseSuppression(_ cstr: UnsafeMutablePointer<CChar>?) -> NoiseSuppressionState? {
+        guard let cstr else { return nil }
+        guard let data = String(cString: cstr).data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(NoiseSuppressionState.self, from: data)
+    }
+
+    /// What the SDK's noise suppression is now. Process-wide; Apple builds have
+    /// no OpenNC stage and report `.unsupported`.
+    public static var noiseSuppressionState: NoiseSuppressionState {
+        let raw = session_noise_suppression_state()
+        defer { session_string_free(raw) }
+        return decodeNoiseSuppression(raw) ?? NoiseSuppressionState(active: false, reason: .unsupported)
+    }
+
     private func mapEvent(_ ev: SessionEvent) -> ClientEvent? {
         guard let sidPtr = ev.session_id else { return nil }
         let sid = String(cString: sidPtr)
@@ -1690,6 +1705,10 @@ public final class OrigonClient: @unchecked Sendable {
         case SESSION_EVENT_CHAT_SESSION_ENDED:
             let ended = Self.decodeSessionEnded(ev.message_json)
             return .chatSessionEnded(sessionId: sid, reason: ended.reason, acw: ended.acw)
+
+        case SESSION_EVENT_NOISE_SUPPRESSION_CHANGED:
+            guard let state = Self.decodeNoiseSuppression(ev.message_json) else { return nil }
+            return .noiseSuppressionChanged(sessionId: sid, active: state.active, reason: state.reason)
 
         default:
             return nil

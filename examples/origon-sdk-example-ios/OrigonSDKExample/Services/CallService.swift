@@ -168,7 +168,7 @@ final class CallService: ObservableObject {
         case .controlUpdated, .typing, .sessionUpdated,
              .peerAttached, .peerDetached,
              .messageAdded, .messageUpdated,
-             .chatSessionEnded:
+             .chatSessionEnded, .noiseSuppressionChanged:
             break
         }
     }

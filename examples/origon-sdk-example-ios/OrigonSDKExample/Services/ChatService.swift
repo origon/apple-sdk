@@ -667,7 +667,7 @@ final class ChatService: ObservableObject {
 
         case .sessionUpdated,
              .controlUpdated, .peerAttached, .peerDetached, .callError,
-             .audioRouteChanged:
+             .audioRouteChanged, .noiseSuppressionChanged:
             break
         }
     }

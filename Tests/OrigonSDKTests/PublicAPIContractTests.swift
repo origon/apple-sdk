@@ -44,4 +44,19 @@ final class PublicAPIContractTests: XCTestCase {
         let encoded = try JSONEncoder().encode(try decode(#""chatEndEnabled":false,"#))
         XCTAssertFalse(try JSONDecoder().decode(ServerConfig.self, from: encoded).isChatEndEnabled)
     }
+
+    func testNoiseSuppressionStateIsUnsupportedOnApple() {
+        let state: NoiseSuppressionState = OrigonClient.noiseSuppressionState
+        XCTAssertEqual(state, NoiseSuppressionState(active: false, reason: .unsupported))
+    }
+
+    func testNoiseSuppressionReasonsDecodeTheBridgeNames() throws {
+        let decode = { (json: String) throws -> NoiseSuppressionState in
+            try JSONDecoder().decode(NoiseSuppressionState.self, from: Data(json.utf8))
+        }
+        XCTAssertEqual(try decode(#"{"active":true,"reason":"none"}"#), NoiseSuppressionState(active: true, reason: .none))
+        for name in ["userOff", "slowDevice", "modelUnavailable", "unsupported"] {
+            XCTAssertEqual(try decode(#"{"active":false,"reason":""# + name + #""}"#).reason.rawValue, name)
+        }
+    }
 }

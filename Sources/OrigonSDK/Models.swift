@@ -120,6 +120,35 @@ public enum AudioOutputRoute: Int32, Sendable {
     case bluetooth = 2
 }
 
+/// Why the SDK's OpenNC noise suppression is not what capture runs. Apple builds
+/// have no OpenNC stage, so iOS and macOS always report `.unsupported`.
+public enum NoiseSuppressionReason: String, Sendable, Decodable {
+    /// OpenNC runs, or will at the next capture.
+    case none
+    /// The user turned it off.
+    case userOff
+    /// The device fell behind; capture runs the lighter suppressor until a retry takes.
+    case slowDevice
+    /// No model is installed yet.
+    case modelUnavailable
+    /// This platform has no OpenNC stage.
+    case unsupported
+}
+
+/// What the SDK's noise suppression is, as ``OrigonClient/noiseSuppressionState``
+/// reports it and ``ClientEvent/noiseSuppressionChanged(sessionId:active:reason:)`` carries.
+public struct NoiseSuppressionState: Sendable, Equatable, Decodable {
+    /// OpenNC runs, or will at the next capture.
+    public let active: Bool
+    /// Why not, when `active` is false; `.none` when it is.
+    public let reason: NoiseSuppressionReason
+
+    public init(active: Bool, reason: NoiseSuppressionReason) {
+        self.active = active
+        self.reason = reason
+    }
+}
+
 /// APNs delivery environment for a device token.
 ///
 /// A token is bound to the environment of the build that produced it —
@@ -1122,6 +1151,10 @@ public enum ClientEvent: Sendable {
     /// an OS-driven change (e.g. a headset plugged in mid-call). Drive a
     /// speaker toggle from `route == .speaker`.
     case audioRouteChanged(sessionId: String, route: AudioOutputRoute)
+    /// The SDK's noise suppression changed: OpenNC engaged, a fallback on a slow
+    /// device, a retry taking, the user's choice, a model landing. Never sent on
+    /// Apple platforms, which have no OpenNC stage; handle it for parity.
+    case noiseSuppressionChanged(sessionId: String, active: Bool, reason: NoiseSuppressionReason)
     /// A chat session ended cleanly — the agent or flow explicitly closed it.
     /// Distinct from ``disconnected(sessionId:reason:)``: the SDK emits this
     /// and then stops the chat actor WITHOUT a trailing `.disconnected`, so a
@@ -1145,6 +1178,7 @@ public enum ClientEvent: Sendable {
              .disconnected(let s, _),
              .callError(let s, _),
              .audioRouteChanged(let s, _),
+             .noiseSuppressionChanged(let s, _, _),
              .chatSessionEnded(let s, _, _):
             return s
         }
