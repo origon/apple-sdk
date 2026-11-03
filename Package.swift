@@ -13,8 +13,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "COrigonSDK",
-            url: "https://github.com/Origon/apple-sdk/releases/download/v0.3.8/COrigonSDK.xcframework.zip",
-            checksum: "e48c3d36d88b6cccf3be6c60ef39543ae27b9f169f1884eb53ef70910697c362"
+            url: "https://github.com/Origon/apple-sdk/releases/download/v0.4.0/COrigonSDK.xcframework.zip",
+            checksum: "72a8061354cfb02702daf8747206587a9dc5055773c2922403b076318e51e595"
         ),
         .target(
             name: "OrigonSDK",
@@ -22,7 +22,6 @@ let package = Package(
             path: "Sources/OrigonSDK",
             linkerSettings: [
                 .linkedFramework("Foundation"),
-                .linkedFramework("Network"),
                 .linkedFramework("AVFAudio", .when(platforms: [.iOS])),
                 .linkedFramework("AudioToolbox", .when(platforms: [.iOS])),
                 .linkedFramework("CoreFoundation", .when(platforms: [.macOS])),
