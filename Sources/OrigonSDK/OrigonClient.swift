@@ -1633,7 +1633,7 @@ public final class OrigonClient: @unchecked Sendable {
     }
 
     /// What the SDK's noise suppression is now. Process-wide; Apple builds have
-    /// no OpenNC stage and report `.unsupported`.
+    /// no denoiser stage and report `.unsupported`.
     public static var noiseSuppressionState: NoiseSuppressionState {
         let raw = session_noise_suppression_state()
         defer { session_string_free(raw) }
