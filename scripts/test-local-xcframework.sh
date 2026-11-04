@@ -33,6 +33,10 @@ while IFS= read -r header; do
     echo "$header is missing session_client_send_dtmf" >&2
     exit 1
   }
+  grep -q 'const char \*models_dir;' "$header" || {
+    echo "$header is missing SessionClientConfig.models_dir" >&2
+    exit 1
+  }
   for required in session_client_directory_page_loader_start \
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \

@@ -111,6 +111,24 @@ registers the cross-repository contracts that must change and validate together.
   follows the exiting call. `close()` cancels/joins all native loaders and cache
   writers before destroying the client. Static `clearAllChatCaches()` is called only after all
   clients close and returns after the fail-closed root rename.
+- The wrapper always supplies `Application Support/ai.origon.sdk/models` as
+  `SessionClientConfig.models_dir` (the last field of the struct) on iOS and
+  macOS, created on init, excluded from backup, and on iOS given
+  complete-until-first-authentication Data Protection so a call on a locked
+  device can still read the model. Rust owns every file inside: it downloads the
+  OpenNC model there for the playout stage, which denoises remote audio the
+  media server flags. Capture stays on VoiceProcessingIO, so
+  `noiseSuppressionState` stays `.unsupported` and no
+  `.noiseSuppressionChanged` event is sent. A folder that cannot be prepared is
+  passed as NULL, which never fetches; the call plays that audio without
+  denoising. The producer is `workspace/apps/sdk/session/include/session_bridge.h`
+  (`session/docs/contract.md`, `ClientConfig.models_dir`).
+- The SDK ships OpenNC's `LICENSE` and `NOTICE` as SwiftPM resources of the
+  `OrigonSDK` target (`Sources/OrigonSDK/Resources/THIRD_PARTY_NOTICES`, copied
+  from `workspace/foundation/media/audio/src/ns/opennc/`).
+  `OrigonClient.thirdPartyNotices` lists their URLs, sorted by file name; an app
+  that links the SDK shows them in its acknowledgements. A model under other
+  terms updates these files first.
 - Passive foreground restore calls `restoreActiveChats()` and never takes over
   another installation. Explicit history navigation and a push tap call
   `openChat(sessionId:intent:)`; only `.explicitNavigation` and `.notification`

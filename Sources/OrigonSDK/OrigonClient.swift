@@ -318,6 +318,7 @@ public final class OrigonClient: @unchecked Sendable {
         } else {
             cacheRoot = nil
         }
+        let modelsDir = NoiseModelStorage.prepare()?.path
         let rc: Int32 = config.endpoint.withCString { endpointPtr in
             withOptionalCString(bundleId) { bundlePtr in
                 withOptionalCString(config.token) { tokenPtr in
@@ -325,16 +326,19 @@ public final class OrigonClient: @unchecked Sendable {
                         installationId.withCString { installationIdPtr in
                             withOptionalCString(attributesJson) { attrsPtr in
                                 withOptionalCString(cacheRoot) { cachePtr in
-                                    var cfg = SessionClientConfig(
-                                        endpoint: endpointPtr,
-                                        bundle_id: bundlePtr,
-                                        token: tokenPtr,
-                                        user_id: userIdPtr,
-                                        installation_id: installationIdPtr,
-                                        attributes_json: attrsPtr,
-                                        cache_dir: cachePtr
-                                    )
-                                    return session_client_create(&cfg, &newHandle, &err)
+                                    withOptionalCString(modelsDir) { modelsPtr in
+                                        var cfg = SessionClientConfig(
+                                            endpoint: endpointPtr,
+                                            bundle_id: bundlePtr,
+                                            token: tokenPtr,
+                                            user_id: userIdPtr,
+                                            installation_id: installationIdPtr,
+                                            attributes_json: attrsPtr,
+                                            cache_dir: cachePtr,
+                                            models_dir: modelsPtr
+                                        )
+                                        return session_client_create(&cfg, &newHandle, &err)
+                                    }
                                 }
                             }
                         }
@@ -1633,7 +1637,7 @@ public final class OrigonClient: @unchecked Sendable {
     }
 
     /// What the SDK's noise suppression is now. Process-wide; Apple builds have
-    /// no OpenNC stage and report `.unsupported`.
+    /// no OpenNC capture stage and report `.unsupported`.
     public static var noiseSuppressionState: NoiseSuppressionState {
         let raw = session_noise_suppression_state()
         defer { session_string_free(raw) }

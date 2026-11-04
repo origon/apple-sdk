@@ -139,6 +139,32 @@ final class MobileContinuityTests: XCTestCase {
         #endif
     }
 
+    func testModelsDirectoryIsFixedAndExcludedFromBackup() throws {
+        let base = FileManager.default.temporaryDirectory
+            .appendingPathComponent("origon-models-test-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let root = try NoiseModelStorage.prepare(in: base)
+        XCTAssertTrue(root.path.hasSuffix("/ai.origon.sdk/models"))
+        var isDirectory: ObjCBool = false
+        XCTAssertTrue(FileManager.default.fileExists(atPath: root.path, isDirectory: &isDirectory))
+        XCTAssertTrue(isDirectory.boolValue)
+        let values = try root.resourceValues(forKeys: [.isExcludedFromBackupKey])
+        XCTAssertEqual(values.isExcludedFromBackup, true)
+        // Idempotent: a second client reuses the folder.
+        XCTAssertEqual(try NoiseModelStorage.prepare(in: base), root)
+    }
+
+    func testOpenNcNoticesShipAsResources() throws {
+        let names = OrigonClient.thirdPartyNotices.map(\.lastPathComponent)
+        XCTAssertEqual(names, ["opennc-LICENSE.txt", "opennc-NOTICE.txt"])
+        let notice = try String(
+            contentsOf: try XCTUnwrap(OrigonClient.thirdPartyNotices.last),
+            encoding: .utf8
+        )
+        XCTAssertTrue(notice.contains("Apache License"))
+    }
+
     func testSessionSummaryRequiresActive() throws {
         let complete = #"{"sessionId":"s","subject":"x","channel":"chat","active":true,"createdAt":"c","updatedAt":"u"}"#
         XCTAssertTrue(try JSONDecoder().decode(SessionSummary.self, from: Data(complete.utf8)).active)

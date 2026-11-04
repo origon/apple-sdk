@@ -20,6 +20,9 @@ let package = Package(
             name: "OrigonSDK",
             dependencies: ["COrigonSDK"],
             path: "Sources/OrigonSDK",
+            // OpenNC's LICENSE and NOTICE, for the model libsession downloads
+            // (`OrigonClient.thirdPartyNotices`).
+            resources: [.copy("Resources/THIRD_PARTY_NOTICES")],
             linkerSettings: [
                 .linkedFramework("Foundation"),
                 .linkedFramework("Network"),

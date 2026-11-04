@@ -481,6 +481,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `sessionHistoryPageUpdates(id:request:)` | Finite strict chronological transcript page stream. Defaults to 100 rows (250 maximum); continuation pages are older. |
 | `cachedSession(s)` / `refreshSession(s)` | Explicit cache-only and authoritative network snapshots. |
 | `removeCachedSession(id:)` / `clearChatCache()` / `pruneChatCache()` | Explicit cache maintenance. |
+| `OrigonClient.thirdPartyNotices` | URLs of the licence and notice texts the SDK ships (OpenNC's `LICENSE` and `NOTICE`, for the denoiser model it downloads). Show them in your app's acknowledgements. |
 | `close()` / `OrigonClient.clearAllChatCaches()` | Close joins native loaders and cache writers; after all clients close, atomically clear every cached scope. |
 | `joinCall(_:)` / `joinChat(_:)` | Attach to a previously-obtained `StartSessionResponse`. |
 | `endChat(_:)` | End an owned customer chat, preserving its transcript. Blocking call: execute off the UI thread. Duplicate pending requests coalesce; failures are reported for retry. Offer it only when `isChatEndEnabled` is `true`. |
@@ -506,7 +507,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 
 | Type | Description |
 | --- | --- |
-| `ClientConfig` | endpoint, optional `token`, optional `userId`, attributes, and default-on `chatCachePolicy`. The protected cache root is fixed under Application Support and excluded from backup. |
+| `ClientConfig` | endpoint, optional `token`, optional `userId`, attributes, and default-on `chatCachePolicy`. The protected cache root is fixed under Application Support and excluded from backup, as is the folder for the denoiser model (`ai.origon.sdk/models`); you pass neither. |
 | `APNSEnvironment` | `.sandbox`, `.production`. Optional override for `registerForPushNotifications(deviceToken:environment:)`; auto-detected from the provisioning profile when omitted. |
 | `Channel` | `.chat`, `.voice`. |
 | `SessionControl` | `.ai`, `.user`. |
@@ -521,7 +522,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `AttachmentRule` / `AttachmentPolicy` | tenant policy for attachments. |
 | `ServerConfig` | full `/config` snapshot. |
 | `DisconnectReason` | structured disconnect reasons (incl. `.serverClosed(code:detail:)`). |
-| `ClientEvent` | `.messageAdded`, `.messageUpdated`, `.connected`, `.reconnecting`, `.reconnected`, `.peerAttached`, `.peerDetached`, `.disconnected`, `.callError`, `.audioRouteChanged`, `.noiseSuppressionChanged`, `.controlUpdated`, `.typing`, `.sessionUpdated`, `.chatSessionEnded`. Every case carries `sessionId`. `.audioRouteChanged` carries the now-current `AudioOutputRoute` (drive a speaker toggle from `route == .speaker`); it fires on OS-driven route changes (headset plug/unplug) as well as your own `setAudioOutput`. `.noiseSuppressionChanged(sessionId:active:reason:)` mirrors the other native SDKs; Apple builds have no OpenNC stage, so it is never sent here and `OrigonClient.noiseSuppressionState` is always `active: false, reason: .unsupported`. Handle it with your other ignored cases. |
+| `ClientEvent` | `.messageAdded`, `.messageUpdated`, `.connected`, `.reconnecting`, `.reconnected`, `.peerAttached`, `.peerDetached`, `.disconnected`, `.callError`, `.audioRouteChanged`, `.noiseSuppressionChanged`, `.controlUpdated`, `.typing`, `.sessionUpdated`, `.chatSessionEnded`. Every case carries `sessionId`. `.audioRouteChanged` carries the now-current `AudioOutputRoute` (drive a speaker toggle from `route == .speaker`); it fires on OS-driven route changes (headset plug/unplug) as well as your own `setAudioOutput`. `.noiseSuppressionChanged(sessionId:active:reason:)` mirrors the other native SDKs; Apple builds have no OpenNC capture stage, so it is never sent here and `OrigonClient.noiseSuppressionState` is always `active: false, reason: .unsupported`. Handle it with your other ignored cases. |
 | `Message` / `MessageMetadata` / `MessageAudience` | typed transcript line with optional `metadata` and optional closed audience (`internal` or `all`). Missing/null/empty legacy metadata remains nil; unknown non-empty audiences fail decoding. |
 | `TypingState` / `TypingParticipant` | ordered authoritative active-typer snapshot. Render `participants.first` for the one-avatar UI; treat it as ephemeral and never persist/log it. |
 | `Attachment` | uploaded-media descriptor: `id`, `name`, `contentType`, `url`, and an optional client-side `localUrl` preview (kept on the local `Message`, stripped from the wire). Returned by `uploadAttachment(...)`, carried on `Message.attachments`, and passed back into `SendMessagePayload.attachments`. |

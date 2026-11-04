@@ -121,7 +121,7 @@ public enum AudioOutputRoute: Int32, Sendable {
 }
 
 /// Why the SDK's OpenNC noise suppression is not what capture runs. Apple builds
-/// have no OpenNC stage, so iOS and macOS always report `.unsupported`.
+/// have no OpenNC capture stage, so iOS and macOS always report `.unsupported`.
 public enum NoiseSuppressionReason: String, Sendable, Decodable {
     /// OpenNC runs, or will at the next capture.
     case none
@@ -131,7 +131,7 @@ public enum NoiseSuppressionReason: String, Sendable, Decodable {
     case slowDevice
     /// No model is installed yet.
     case modelUnavailable
-    /// This platform has no OpenNC stage.
+    /// This platform has no OpenNC capture stage.
     case unsupported
 }
 
@@ -1153,7 +1153,7 @@ public enum ClientEvent: Sendable {
     case audioRouteChanged(sessionId: String, route: AudioOutputRoute)
     /// The SDK's noise suppression changed: OpenNC engaged, a fallback on a slow
     /// device, a retry taking, the user's choice, a model landing. Never sent on
-    /// Apple platforms, which have no OpenNC stage; handle it for parity.
+    /// Apple platforms, which have no OpenNC capture stage; handle it for parity.
     case noiseSuppressionChanged(sessionId: String, active: Bool, reason: NoiseSuppressionReason)
     /// A chat session ended cleanly — the agent or flow explicitly closed it.
     /// Distinct from ``disconnected(sessionId:reason:)``: the SDK emits this
