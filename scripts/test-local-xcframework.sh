@@ -40,7 +40,8 @@ while IFS= read -r header; do
   for required in session_client_directory_page_loader_start \
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \
-    session_client_config_retry session_client_end_chat session_client_cancel_upload; do
+    session_client_config_retry session_client_end_chat session_client_cancel_upload \
+    session_client_playout_ns_stats 'typedef struct SessionPlayoutNsStats'; do
     grep -q "$required" "$header" || {
       echo "$header is missing $required" >&2
       exit 1
@@ -67,7 +68,8 @@ while IFS= read -r library; do
   for required in session_client_directory_page_loader_start \
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \
-    session_client_config_retry session_client_end_chat session_client_cancel_upload; do
+    session_client_config_retry session_client_end_chat session_client_cancel_upload \
+    session_client_playout_ns_stats; do
     grep -Eq "^_?${required}$" <<<"$symbols" || {
       echo "$library is missing $required" >&2
       exit 1

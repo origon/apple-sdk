@@ -1194,12 +1194,19 @@ public final class OrigonClient: @unchecked Sendable {
     /// Read-only; cheap enough to poll every second.
     public func callStats(id: String) throws -> CallStats? {
         var stats = SessionCallStats()
+        var playoutNs = SessionPlayoutNsStats()
         var err = SessionError()
         let rc = try withHandle { handle in
-            id.withCString { session_client_call_stats(handle, $0, &stats, &err) }
+            id.withCString { cId -> Int32 in
+                let rc = session_client_call_stats(handle, cId, &stats, &err)
+                guard rc == 0 else { return rc }
+                // 1 here (the call ended in between) leaves the counters zero.
+                let nsRc = session_client_playout_ns_stats(handle, cId, &playoutNs, &err)
+                return nsRc < 0 ? nsRc : 0
+            }
         }
         switch rc {
-        case 0: return CallStats(stats)
+        case 0: return CallStats(stats, playoutNs: playoutNs)
         case 1: return nil
         default: throw OrigonError.consume(&err)
         }
@@ -1880,7 +1887,7 @@ extension OrigonError {
 }
 
 extension CallStats {
-    init(_ stats: SessionCallStats) {
+    init(_ stats: SessionCallStats, playoutNs: SessionPlayoutNsStats = SessionPlayoutNsStats()) {
         self.init(
             uplink: Uplink(
                 sent: stats.uplink_sent,
@@ -1894,7 +1901,9 @@ extension CallStats {
                 skippedStale: stats.uplink_skipped_stale,
                 probes: stats.uplink_probes,
                 redundancyOn: stats.uplink_red != 0,
-                fecLossPercent: stats.uplink_fec_loss_percent
+                fecLossPercent: stats.uplink_fec_loss_percent,
+                playoutNsTracks: playoutNs.tracks,
+                playoutNsFallbacks: playoutNs.fallbacks
             ),
             downlink: Downlink(
                 tracks: stats.downlink_tracks,
@@ -1909,7 +1918,8 @@ extension CallStats {
                 jitterMs: stats.downlink_jitter_ms,
                 depthMs: stats.downlink_depth_ms,
                 targetDepthMs: stats.downlink_target_depth_ms,
-                audioAgeMs: stats.downlink_audio_age_ms
+                audioAgeMs: stats.downlink_audio_age_ms,
+                playoutNsDryFrames: playoutNs.dry_frames
             ),
             transport: Transport(
                 rttUs: stats.transport_rtt_us,

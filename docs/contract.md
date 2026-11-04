@@ -188,6 +188,17 @@ registers the cross-repository contracts that must change and validate together.
   `0-9*#A-D` before calling the ABI. Neither local validation nor native errors
   echo the symbol, and a failed request is never retried by the wrapper.
 
+## Call statistics
+
+- `callStats(id:)` reads `session_client_call_stats` and, when that wrote
+  stats, `session_client_playout_ns_stats` for the same id, and maps both into
+  one `CallStats`; it returns `nil` while there are none and throws only for a
+  native `-1`. `SessionPlayoutNsStats` fills `uplink.playoutNsTracks` (a gauge),
+  `uplink.playoutNsFallbacks` and `downlink.playoutNsDryFrames` (lifetime, 20 ms
+  frames); a call that ends between the two reads reports them as 0. The
+  producer is `workspace/apps/sdk/session/include/session_bridge.h`
+  (`session/docs/contract.md#call-statistics`).
+
 ## Session directory and transcript pagination
 
 - The wrapper consumes only the additive native starts

@@ -490,6 +490,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `sendDtmf(id:digit:)` | Voice — send one uppercase ASCII `0-9`, `*`, `#`, or `A-D` control symbol to the CX flow. Produces no local tone or haptic. |
 | `observeAudioLevels(sessionId:_:)` | Voice — cancellable MainActor callback carrying aggregate outbound/inbound RMS and endpoint-attributed inbound levels. Retain the returned `AudioLevelObservation`. |
 | `setMute(id:muted:)` / `setMuteAll(muted:)` | Voice — absolute mute. |
+| `callStats(id:)` | Voice — `CallStats` snapshot (`uplink`, `downlink`, `transport`), or `nil` while there are none; cheap enough to poll every second. Playout noise suppression: `uplink.playoutNsTracks` (stages running now), `uplink.playoutNsFallbacks` (times a stage stopped) and `downlink.playoutNsDryFrames` (flagged 20 ms frames played un-denoised). |
 | `setAudioOutput(_:)` | Voice — override the audio output route (`.speaker` / `.automatic` / `.bluetooth`). Process-global; survives reconnects. |
 | `sendMessage(id:payload:)` | Chat — POST `<sessionUrl>/message`. Returns the server-issued `Message`. Fires `.messageAdded` then `.messageUpdated`. |
 | `notifyTyping(id:)` | Chat — register a keystroke; SDK debounces outbound `/typing` POSTs. |

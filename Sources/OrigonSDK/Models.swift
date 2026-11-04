@@ -1011,6 +1011,11 @@ public struct CallStats: Sendable, Equatable {
         public let probes: UInt64
         public let redundancyOn: Bool
         public let fecLossPercent: UInt32
+        /// Playout noise-suppression stages running now on flagged remote
+        /// audio (at most 2); a gauge.
+        public let playoutNsTracks: UInt64
+        /// Times the call's playout noise-suppression stages stopped.
+        public let playoutNsFallbacks: UInt64
     }
 
     public struct Downlink: Sendable, Equatable {
@@ -1027,6 +1032,8 @@ public struct CallStats: Sendable, Equatable {
         public let depthMs: UInt32
         public let targetDepthMs: UInt32
         public let audioAgeMs: UInt32
+        /// Flagged 20 ms frames played without denoised audio.
+        public let playoutNsDryFrames: UInt64
     }
 
     public struct Transport: Sendable, Equatable {
