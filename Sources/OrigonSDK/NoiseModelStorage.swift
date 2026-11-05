@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where libsession keeps the OpenNC denoiser model it downloads for the
+/// Where libsession keeps the denoiser model it downloads for the
 /// playout stage (`Application Support/ai.origon.sdk/models`). Capture stays on
 /// VoiceProcessingIO, so the model only denoises flagged remote audio.
 enum NoiseModelStorage {
