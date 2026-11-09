@@ -50,6 +50,16 @@ final class PublicAPIContractTests: XCTestCase {
         XCTAssertEqual(state, NoiseSuppressionState(active: false, reason: .unsupported))
     }
 
+    func testPlayoutNoiseSuppressionDefaultsOnAndIsSetLive() {
+        XCTAssertTrue(ClientConfig(endpoint: "https://example.invalid").playoutNoiseSuppression)
+        let off = ClientConfig(endpoint: "https://example.invalid", playoutNoiseSuppression: false)
+        XCTAssertFalse(off.playoutNoiseSuppression)
+        let setter: (Bool) -> Void = OrigonClient.setPlayoutNoiseSuppression
+        // Process-wide: reaches the C symbol with or without a client.
+        setter(false)
+        setter(true)
+    }
+
     func testNoiseSuppressionReasonsDecodeTheBridgeNames() throws {
         let decode = { (json: String) throws -> NoiseSuppressionState in
             try JSONDecoder().decode(NoiseSuppressionState.self, from: Data(json.utf8))

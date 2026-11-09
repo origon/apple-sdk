@@ -335,7 +335,8 @@ public final class OrigonClient: @unchecked Sendable {
                                             installation_id: installationIdPtr,
                                             attributes_json: attrsPtr,
                                             cache_dir: cachePtr,
-                                            models_dir: modelsPtr
+                                            models_dir: modelsPtr,
+                                            playout_noise_suppression: config.playoutNoiseSuppression ? 1 : 0
                                         )
                                         return session_client_create(&cfg, &newHandle, &err)
                                     }
@@ -1649,6 +1650,14 @@ public final class OrigonClient: @unchecked Sendable {
         let raw = session_noise_suppression_state()
         defer { session_string_free(raw) }
         return decodeNoiseSuppression(raw) ?? NoiseSuppressionState(active: false, reason: .unsupported)
+    }
+
+    /// Turn the denoiser on flagged (PSTN) downlink audio on or off, live and
+    /// process-wide, with or without a client. On mid-call inserts the stage's
+    /// delay and fades in; off fades out and drops the delay (a one-off splice).
+    /// From then on it overrides every `ClientConfig.playoutNoiseSuppression`.
+    public static func setPlayoutNoiseSuppression(_ enabled: Bool) {
+        session_set_playout_noise_suppression(enabled ? 1 : 0)
     }
 
     private func mapEvent(_ ev: SessionEvent) -> ClientEvent? {

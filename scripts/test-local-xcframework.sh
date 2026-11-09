@@ -37,11 +37,16 @@ while IFS= read -r header; do
     echo "$header is missing SessionClientConfig.models_dir" >&2
     exit 1
   }
+  grep -q 'uint8_t playout_noise_suppression;' "$header" || {
+    echo "$header is missing SessionClientConfig.playout_noise_suppression" >&2
+    exit 1
+  }
   for required in session_client_directory_page_loader_start \
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \
     session_client_config_retry session_client_end_chat session_client_cancel_upload \
-    session_client_playout_ns_stats 'typedef struct SessionPlayoutNsStats'; do
+    session_client_playout_ns_stats 'typedef struct SessionPlayoutNsStats' \
+    session_set_playout_noise_suppression; do
     grep -q "$required" "$header" || {
       echo "$header is missing $required" >&2
       exit 1
@@ -69,7 +74,7 @@ while IFS= read -r library; do
     session_client_session_history_page_loader_start \
     session_client_server_config session_client_config_loader_start \
     session_client_config_retry session_client_end_chat session_client_cancel_upload \
-    session_client_playout_ns_stats; do
+    session_client_playout_ns_stats session_set_playout_noise_suppression; do
     grep -Eq "^_?${required}$" <<<"$symbols" || {
       echo "$library is missing $required" >&2
       exit 1

@@ -234,19 +234,25 @@ public struct ClientConfig: Sendable {
     /// any valid top-level JSON object.
     public let attributes: [String: Any]?
     public let chatCachePolicy: ChatCachePolicy
+    /// The denoiser on flagged (PSTN) downlink audio. Default on. Applies to
+    /// the process until `OrigonClient.setPlayoutNoiseSuppression(_:)` chooses
+    /// live; after that, a new client's value is ignored.
+    public let playoutNoiseSuppression: Bool
 
     public init(
         endpoint: String,
         token: String? = nil,
         userId: String? = nil,
         attributes: [String: Any]? = nil,
-        chatCachePolicy: ChatCachePolicy = .enabled
+        chatCachePolicy: ChatCachePolicy = .enabled,
+        playoutNoiseSuppression: Bool = true
     ) {
         self.endpoint = endpoint
         self.token = token
         self.userId = userId
         self.attributes = attributes
         self.chatCachePolicy = chatCachePolicy
+        self.playoutNoiseSuppression = playoutNoiseSuppression
     }
 }
 

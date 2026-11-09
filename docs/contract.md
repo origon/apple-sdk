@@ -123,6 +123,16 @@ registers the cross-repository contracts that must change and validate together.
   passed as NULL, which never fetches; the call plays that audio without
   denoising. The producer is `workspace/apps/sdk/session/include/session_bridge.h`
   (`session/docs/contract.md`, `ClientConfig.models_dir`).
+- `ClientConfig.playoutNoiseSuppression` (last init parameter, default `true`)
+  fills `SessionClientConfig.playout_noise_suppression` (`uint8_t`, the last
+  field: 1 on, 0 off; the wrapper always sets it, since a zero-initialised
+  struct means off). The value applies to the process only until something
+  chooses live. Static `OrigonClient.setPlayoutNoiseSuppression(_:)` calls
+  process-wide `session_set_playout_noise_suppression` (no handle, works with
+  or without a client): on mid-call inserts the stage delay and fades in, off
+  fades out and drops the delay; from then on a new client's config value is
+  ignored. Capture is unaffected (VoiceProcessingIO). Producer:
+  `session_bridge.h` (`session/docs/contract.md`, `set_playout_noise_suppression`).
 - The SDK ships no model notice: the denoiser model (R6F5) is Origon's own. A
   model with attribution terms adds its `NOTICE` as a SwiftPM resource of the
   `OrigonSDK` target, with an API that lists it, before any build downloads it.

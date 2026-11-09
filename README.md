@@ -490,6 +490,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `observeAudioLevels(sessionId:_:)` | Voice — cancellable MainActor callback carrying aggregate outbound/inbound RMS and endpoint-attributed inbound levels. Retain the returned `AudioLevelObservation`. |
 | `setMute(id:muted:)` / `setMuteAll(muted:)` | Voice — absolute mute. |
 | `callStats(id:)` | Voice — `CallStats` snapshot (`uplink`, `downlink`, `transport`), or `nil` while there are none; cheap enough to poll every second. Playout noise suppression: `uplink.playoutNsTracks` (stages running now), `uplink.playoutNsFallbacks` (times a stage stopped) and `downlink.playoutNsDryFrames` (flagged 20 ms frames played un-denoised). |
+| `OrigonClient.setPlayoutNoiseSuppression(_:)` | Voice — static, process-wide, with or without a client: turn the denoiser on flagged (PSTN) downlink audio on or off, live. On mid-call inserts the stage's delay and fades in; off fades out and drops it (a one-off splice). Overrides `ClientConfig.playoutNoiseSuppression` from then on. |
 | `setAudioOutput(_:)` | Voice — override the audio output route (`.speaker` / `.automatic` / `.bluetooth`). Process-global; survives reconnects. |
 | `sendMessage(id:payload:)` | Chat — POST `<sessionUrl>/message`. Returns the server-issued `Message`. Fires `.messageAdded` then `.messageUpdated`. |
 | `notifyTyping(id:)` | Chat — register a keystroke; SDK debounces outbound `/typing` POSTs. |
@@ -507,7 +508,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 
 | Type | Description |
 | --- | --- |
-| `ClientConfig` | endpoint, optional `token`, optional `userId`, attributes, and default-on `chatCachePolicy`. The protected cache root is fixed under Application Support and excluded from backup, as is the folder for the denoiser model (`ai.origon.sdk/models`); you pass neither. |
+| `ClientConfig` | endpoint, optional `token`, optional `userId`, attributes, default-on `chatCachePolicy`, and default-on `playoutNoiseSuppression` (the denoiser on flagged downlink audio; applies until `OrigonClient.setPlayoutNoiseSuppression(_:)` chooses live). The protected cache root is fixed under Application Support and excluded from backup, as is the folder for the denoiser model (`ai.origon.sdk/models`); you pass neither. |
 | `APNSEnvironment` | `.sandbox`, `.production`. Optional override for `registerForPushNotifications(deviceToken:environment:)`; auto-detected from the provisioning profile when omitted. |
 | `Channel` | `.chat`, `.voice`. |
 | `SessionControl` | `.ai`, `.user`. |
