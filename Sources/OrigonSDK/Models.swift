@@ -1216,6 +1216,13 @@ public struct OrigonError: Error, Sendable, CustomStringConvertible, LocalizedEr
         case chatRefused = 10
         /// Local End state; code is "pending" or "unconfirmed".
         case chatEnd = 11
+        /// oRPC peer refusal; code carries the numeric orpc code.
+        case orpcRejected = 12
+        /// oRPC transport loss, dial failure or an ended session.
+        case orpcUnavailable = 13
+        case orpcTimeout = 14
+        /// Bad oRPC url or request.
+        case orpcInvalid = 15
     }
 
     public init(kind: Kind, statusCode: Int = 0, code: String? = nil, message: String? = nil) {

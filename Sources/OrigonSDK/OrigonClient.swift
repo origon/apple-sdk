@@ -464,6 +464,28 @@ public final class OrigonClient: @unchecked Sendable {
         if rc != 0 { throw OrigonError.consume(&err) }
     }
 
+    // MARK: - oRPC (internal; public API in Orpc.swift)
+
+    /// Blocking FFI call — run off the main thread by ``OrpcSession/open``.
+    func openOrpc(url: String, request: OrpcSession.Request) throws -> (OpaquePointer, Data) {
+        var err = SessionError()
+        var raw: OpaquePointer?
+        var response = SessionBytes()
+        let rc: Int32 = try withHandle { handle in
+            url.withCString { urlPtr in
+                request.withC { cRequest in
+                    session_orpc_open(handle, urlPtr, cRequest, &raw, &response, &err)
+                }
+            }
+        }
+        if rc != 0 { throw OrigonError.consume(&err) }
+        defer { session_bytes_free(&response) }
+        guard let raw else {
+            throw OrigonError(kind: .other, message: "orpc open returned no session")
+        }
+        return (raw, Data(orpcBytes: response))
+    }
+
     // MARK: - Cached /config getters
 
     private func readServerConfig() throws -> ServerConfig {
