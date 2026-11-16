@@ -103,6 +103,31 @@ public final class OrpcSession: @unchecked Sendable {
         }
     }
 
+    /// ``open(client:url:request:)`` without an ``OrigonClient``: the session
+    /// runs on its own drivers, released when it is deinitialised. Sign in
+    /// over this before creating a client whose `/config` needs that sign-in
+    /// (the Dock: cx answers `/cx/core/user/config` only for a logged-in agent).
+    ///
+    /// - Returns: the session and the stream's first response body.
+    public static func open(url: String, request: Request) async throws -> (OrpcSession, Data) {
+        try await offload {
+            var err = SessionError()
+            var raw: OpaquePointer?
+            var response = SessionBytes()
+            let rc: Int32 = url.withCString { urlPtr in
+                request.withC { cRequest in
+                    session_orpc_open_standalone(urlPtr, cRequest, &raw, &response, &err)
+                }
+            }
+            if rc != 0 { throw OrigonError.consume(&err) }
+            defer { session_bytes_free(&response) }
+            guard let raw else {
+                throw OrigonError(kind: .other, message: "orpc open returned no session")
+            }
+            return (OrpcSession(pointer: raw), Data(orpcBytes: response))
+        }
+    }
+
     /// Re-open the session-open stream after ``Item/streamEnded(generation:)``.
     ///
     /// - Returns: the new generation and first body, or `nil` when another
