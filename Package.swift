@@ -13,8 +13,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "COrigonSDK",
-            url: "https://github.com/Origon/apple-sdk/releases/download/v0.4.1/COrigonSDK.xcframework.zip",
-            checksum: "7bcc5c016d654c8bbc074fd0bcd2467ec0b7237570933fec2c7ea984f834d901"
+            url: "https://github.com/Origon/apple-sdk/releases/download/v0.4.2/COrigonSDK.xcframework.zip",
+            checksum: "cea12675e2bb767ab8e272eca87486b20e6074d69c43a5ec448bc9850e143b99"
         ),
         .target(
             name: "OrigonSDK",
