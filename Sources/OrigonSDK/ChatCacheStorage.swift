@@ -14,8 +14,26 @@ enum ChatCacheStorage {
         return try prepare(in: applicationSupport)
     }
 
+    /// The folder the SDK caches its denoiser model in (`ClientConfig.models_dir`):
+    /// protected, excluded from backup, refetched if the OS clears it.
+    static func prepareModels() throws -> URL {
+        let applicationSupport = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        return try prepare(modelsDirectory, in: applicationSupport)
+    }
+
+    static let modelsDirectory = "denoiser-models"
+
     /// Test seam: production always supplies Application Support.
     static func prepare(in applicationSupport: URL) throws -> URL {
+        try prepare(directory, in: applicationSupport)
+    }
+
+    private static func prepare(_ directory: String, in applicationSupport: URL) throws -> URL {
         let owner = applicationSupport.appendingPathComponent(namespace, isDirectory: true)
         let root = owner.appendingPathComponent(directory, isDirectory: true)
         try FileManager.default.createDirectory(

@@ -120,8 +120,9 @@ public enum AudioOutputRoute: Int32, Sendable {
     case bluetooth = 2
 }
 
-/// Why the SDK's denoiser noise suppression is not what capture runs. Apple builds
-/// have no denoiser stage, so iOS and macOS always report `.unsupported`.
+/// Why the SDK's denoiser noise suppression is not what capture runs. iOS and macOS
+/// run the denoiser over VoiceProcessingIO; until its model is fetched they report
+/// `.modelUnavailable`.
 public enum NoiseSuppressionReason: String, Sendable, Decodable {
     /// The denoiser runs, or will at the next capture.
     case none

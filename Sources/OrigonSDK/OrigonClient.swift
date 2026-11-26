@@ -318,6 +318,7 @@ public final class OrigonClient: @unchecked Sendable {
         } else {
             cacheRoot = nil
         }
+        let modelsRoot = Self.modelsRoot()
         let rc: Int32 = config.endpoint.withCString { endpointPtr in
             withOptionalCString(bundleId) { bundlePtr in
                 withOptionalCString(config.token) { tokenPtr in
@@ -325,16 +326,19 @@ public final class OrigonClient: @unchecked Sendable {
                         installationId.withCString { installationIdPtr in
                             withOptionalCString(attributesJson) { attrsPtr in
                                 withOptionalCString(cacheRoot) { cachePtr in
-                                    var cfg = SessionClientConfig(
-                                        endpoint: endpointPtr,
-                                        bundle_id: bundlePtr,
-                                        token: tokenPtr,
-                                        user_id: userIdPtr,
-                                        installation_id: installationIdPtr,
-                                        attributes_json: attrsPtr,
-                                        cache_dir: cachePtr
-                                    )
-                                    return session_client_create(&cfg, &newHandle, &err)
+                                    withOptionalCString(modelsRoot) { modelsPtr in
+                                        var cfg = SessionClientConfig(
+                                            endpoint: endpointPtr,
+                                            bundle_id: bundlePtr,
+                                            token: tokenPtr,
+                                            user_id: userIdPtr,
+                                            installation_id: installationIdPtr,
+                                            attributes_json: attrsPtr,
+                                            cache_dir: cachePtr,
+                                            models_dir: modelsPtr
+                                        )
+                                        return session_client_create(&cfg, &newHandle, &err)
+                                    }
                                 }
                             }
                         }
@@ -369,17 +373,21 @@ public final class OrigonClient: @unchecked Sendable {
     public init(offersAt endpoint: String) throws {
         var err = SessionError()
         var newHandle: OpaquePointer?
+        let modelsRoot = Self.modelsRoot()
         let rc: Int32 = endpoint.withCString { endpointPtr in
-            var cfg = SessionClientConfig(
-                endpoint: endpointPtr,
-                bundle_id: nil,
-                token: nil,
-                user_id: nil,
-                installation_id: nil,
-                attributes_json: nil,
-                cache_dir: nil
-            )
-            return session_client_create_for_offers(&cfg, &newHandle, &err)
+            withOptionalCString(modelsRoot) { modelsPtr in
+                var cfg = SessionClientConfig(
+                    endpoint: endpointPtr,
+                    bundle_id: nil,
+                    token: nil,
+                    user_id: nil,
+                    installation_id: nil,
+                    attributes_json: nil,
+                    cache_dir: nil,
+                    models_dir: modelsPtr
+                )
+                return session_client_create_for_offers(&cfg, &newHandle, &err)
+            }
         }
         guard rc == 0, let newHandle else {
             throw OrigonError.consume(&err)
@@ -1692,8 +1700,14 @@ public final class OrigonClient: @unchecked Sendable {
         return try? JSONDecoder().decode(NoiseSuppressionState.self, from: data)
     }
 
-    /// What the SDK's noise suppression is now. Process-wide; Apple builds have
-    /// no denoiser stage and report `.unsupported`.
+    /// The denoiser model folder, or nil (the denoiser stays off) when it cannot be made.
+    private static func modelsRoot() -> String? {
+        try? ChatCacheStorage.prepareModels().path
+    }
+
+    /// What the SDK's noise suppression is now. Process-wide. iOS and macOS run the
+    /// denoiser over VoiceProcessingIO once its model is fetched (`.modelUnavailable`
+    /// until then).
     public static var noiseSuppressionState: NoiseSuppressionState {
         let raw = session_noise_suppression_state()
         defer { session_string_free(raw) }
