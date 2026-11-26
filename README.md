@@ -483,6 +483,7 @@ OrigonClient.registerForPushNotifications(deviceToken: deviceToken, environment:
 | `removeCachedSession(id:)` / `clearChatCache()` / `pruneChatCache()` | Explicit cache maintenance. |
 | `close()` / `OrigonClient.clearAllChatCaches()` | Close joins native loaders and cache writers; after all clients close, atomically clear every cached scope. |
 | `joinCall(_:)` / `joinChat(_:)` | Attach to a previously-obtained `StartSessionResponse`. |
+| `OrigonClient(offersAt:)` | Offer mode: a client that only joins sessions offered out of band (an agent voice chat), each on its offer's token, with `joinCall` / `joinChat`. Loads no `/config`, keeps no cache, registers no push; `start*`, config and history reads fail. |
 | `endChat(_:)` | End an owned customer chat, preserving its transcript. Blocking call: execute off the UI thread. Duplicate pending requests coalesce; failures are reported for retry. Offer it only when `isChatEndEnabled` is `true`. |
 | `isChatEndEnabled` | Whether the backend offers End chat (`false` for an Agents-routed client). |
 | `endSession(_:)` / `endAllSessions()` | Close a single / every local session; customer chat cleanup detaches rather than ending the conversation. |

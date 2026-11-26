@@ -361,6 +361,44 @@ public final class OrigonClient: @unchecked Sendable {
         observeConfigAuthorityForPush()
     }
 
+    /// An offer-mode client: it only joins sessions offered out of band, such as an agent voice
+    /// chat, each on its offer's own token, with ``joinCall(_:)`` and ``joinChat(_:)``. It loads no
+    /// `/config`, keeps no chat cache, sends no user id and registers no push; `start*`, server
+    /// config, open/restore and directory or history reads fail with "not available on an
+    /// offer-mode manager". `endpoint` is still required.
+    public init(offersAt endpoint: String) throws {
+        var err = SessionError()
+        var newHandle: OpaquePointer?
+        let rc: Int32 = endpoint.withCString { endpointPtr in
+            var cfg = SessionClientConfig(
+                endpoint: endpointPtr,
+                bundle_id: nil,
+                token: nil,
+                user_id: nil,
+                installation_id: nil,
+                attributes_json: nil,
+                cache_dir: nil
+            )
+            return session_client_create_for_offers(&cfg, &newHandle, &err)
+        }
+        guard rc == 0, let newHandle else {
+            throw OrigonError.consume(&err)
+        }
+        self.nativeGate = NativeHandleGate(newHandle)
+        self.subscribeAudioLevelsNative = { handle, sessionId in
+            var error = SessionError()
+            var subscription: OpaquePointer?
+            let result = sessionId.withCString {
+                session_client_subscribe_audio_levels(handle, $0, &subscription, &error)
+            }
+            guard result == 0, let subscription else {
+                throw OrigonError.consume(&error)
+            }
+            return CNativeAudioLevelSource(subscription)
+        }
+        self.destroyNative = { session_client_destroy($0) }
+    }
+
     init(
         testingHandle: OpaquePointer,
         subscribeAudioLevels: @escaping @Sendable
